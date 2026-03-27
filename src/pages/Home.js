@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 
 const GAMES = [
   { id:1, away:'KIA', home:'LG', awayScore:3, homeScore:5, inning:'8회 말', live:true },
