@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const TABS = [
   { key:'team', label:'팀 응원' },
@@ -96,6 +96,16 @@ function PostCard({ post, type, onLike, liked, reported, onReport }) {
 
 function Board() {
   const [tab, setTab] = useState('team');
+  const [apiPosts, setApiPosts] = useState([]);
+
+useEffect(() => {
+  fetch('http://localhost:3001/api/posts')
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) setApiPosts(data.data);
+    })
+    .catch(err => console.log('서버 연결 안됨:', err));
+}, []);
   const [likes, setLikes] = useState({});
   const [reports, setReports] = useState({});
 
