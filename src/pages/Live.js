@@ -1,4 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:3001');
+const ROOM_ID = 'general';
 
 const INIT_MSGS = [
   { id:1, user:'야구광123', av:'⚾', msg:'임찬규 오늘 진짜 레전드!', time:'19:24', pro:false },
@@ -49,6 +53,38 @@ function Diamond({ bases }) {
   const [myVote, setMyVote] = useState(null);
   const [votes, setVotes] = useState({ hit:62, out:38 });
   const bottomRef = useRef(null);
+  // 소켓 연결
+useEffect(() => {
+  socket.emit('join', ROOM_ID);
+
+  socket.on('chat_history', (history) => {
+    const formatted = history.map(m => ({
+      id: m.id,
+      user: m.user?.name || '익명',
+      av: '⚾',
+      msg: m.message,
+      time: new Date(m.createdAt).toLocaleTimeString('ko', { hour:'2-digit', minute:'2-digit' }),
+      pro: false,
+    }));
+    setMsgs(formatted);
+  });
+
+  socket.on('receive_message', (data) => {
+    setMsgs(prev => [...prev, {
+      id: data.id,
+      user: data.userName,
+      av: '⚾',
+      msg: data.message,
+      time: new Date(data.createdAt).toLocaleTimeString('ko', { hour:'2-digit', minute:'2-digit' }),
+      pro: false,
+    }]);
+  });
+
+  return () => {
+    socket.off('chat_history');
+    socket.off('receive_message');
+  };
+}, []);
 
   const gs = {
     inning:8, half:'말', outs:1,
@@ -63,17 +99,18 @@ function Diamond({ bases }) {
     bottomRef.current?.scrollIntoView({ behavior:'smooth' });
   }, [msgs]);
 
-  const sendMsg = () => {
-    if (!input.trim()) return;
-    if (hasBadWord(input)) { setWarning(true); return; }
-    const now = new Date();
-    setMsgs(prev => [...prev, {
-      id:Date.now(), user:'나', av:'😎', msg:input,
-      time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`,
-      pro:false,
-    }]);
-    setInput(''); setWarning(false);
-  };
+const sendMsg = () => {
+  if (!input.trim()) return;
+  if (hasBadWord(input)) { setWarning(true); return; }
+  socket.emit('send_message', {
+    message: input,
+    userId: 1,
+    userName: '나',
+    roomId: ROOM_ID,
+  });
+  setInput('');
+  setWarning(false);
+};
 
   const vote = (side) => {
     if (myVote) return;
