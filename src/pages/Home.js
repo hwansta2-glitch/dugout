@@ -4,7 +4,6 @@ const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 
 // today는 모듈 레벨에서 한 번만 생성
 const TODAY = new Date();
-TODAY.setHours(0,0,0,0);
 
 function toDateStr(date) {
   const yyyy = date.getFullYear();
@@ -305,7 +304,7 @@ function GameCard({ game, onClick }) {
 
 // ── 메인 Home ────────────────────────────────────────
 function Home({ onGoLive }) {
-  const [selectedDate, setSelectedDate] = useState(TODAY);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames]               = useState([]);
   const [hotPosts, setHotPosts]         = useState([]);
   const [gamesLoading, setGamesLoading] = useState(false);
