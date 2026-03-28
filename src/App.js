@@ -6,54 +6,128 @@ import Profile from './pages/Profile';
 
 const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 
+// 닉네임 설정 모달
+function NicknameModal({ user, onComplete }) {
+  const [nickname, setNickname] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const valid = /^[a-zA-Z0-9가-힣]{2,8}$/.test(nickname);
+
+  const submit = async () => {
+    if (!valid) return setError('2~8글자 한영숫자만 가능합니다');
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('dugout_token');
+      const res = await fetch(`${SERVER}/api/users/${user.id}/nickname`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ nickname }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onComplete(nickname);
+      } else {
+        setError(data.message || '오류가 발생했습니다');
+      }
+    } catch(e) {
+      setError('서버 연결 실패');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'#000000ee', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ width:'90%', maxWidth:360, background:'#0f172a', borderRadius:16, padding:'28px 20px' }}>
+        <div style={{ textAlign:'center', marginBottom:20 }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>⚾</div>
+          <div style={{ fontSize:17, fontWeight:900, color:'#e2e8f0' }}>Dugout에 오신 걸 환영해요!</div>
+          <div style={{ fontSize:12, color:'#64748b', marginTop:6 }}>사용할 닉네임을 설정해주세요</div>
+        </div>
+
+        <input
+          value={nickname}
+          onChange={e => { setNickname(e.target.value); setError(''); }}
+          placeholder="닉네임 (2~8글자 한영숫자)"
+          maxLength={8}
+          style={{
+            width:'100%', padding:'11px 12px', borderRadius:8,
+            background:'#111827', border:`1px solid ${error ? '#ef4444' : '#1e2d45'}`,
+            color:'#e2e8f0', fontSize:14, boxSizing:'border-box', outline:'none', marginBottom:8,
+          }}
+        />
+        <div style={{ fontSize:11, color: valid && nickname ? '#10b981' : '#64748b', marginBottom: error ? 6 : 14 }}>
+          {nickname ? (valid ? '✅ 사용 가능한 닉네임이에요' : '❌ 2~8글자 한영숫자만 가능합니다') : '닉네임은 이후 7일마다 변경 가능해요'}
+        </div>
+        {error && <div style={{ fontSize:12, color:'#ef4444', marginBottom:12 }}>⚠️ {error}</div>}
+
+        <button
+          onClick={submit}
+          disabled={!valid || loading}
+          style={{
+            width:'100%', padding:'12px', borderRadius:10,
+            background: valid && !loading ? '#3b82f6' : '#1e2d45',
+            border:'none', color: valid ? '#fff' : '#64748b',
+            fontSize:14, fontWeight:700, cursor: valid ? 'pointer' : 'default',
+          }}
+        >{loading ? '설정 중...' : '닉네임 설정하기'}</button>
+      </div>
+    </div>
+  );
+}
+
 function useAuth() {
   const [user, setUser] = useState(null);
+  const [needNickname, setNeedNickname] = useState(false);
 
   useEffect(() => {
-    // ✅ 1단계: URL에 token이 있으면 무조건 먼저 저장 (로그인 직후)
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
 
     if (urlToken) {
       localStorage.setItem('dugout_token', urlToken);
       window.history.replaceState({}, '', '/');
-      fetch(SERVER + '/auth/me', {
-        headers: { Authorization: 'Bearer ' + urlToken }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setUser(data.data);
-      });
-      return; // 아래 코드 실행 안 함
+      fetch(SERVER + '/auth/me', { headers: { Authorization: 'Bearer ' + urlToken } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setUser(data.data);
+            if (!data.data.nickname) setNeedNickname(true);
+          }
+        });
+      return;
     }
 
-    // ✅ 2단계: URL token 없으면 localStorage에서 기존 토큰 확인
     const token = localStorage.getItem('dugout_token');
     if (token) {
-      fetch(SERVER + '/auth/me', {
-        headers: { Authorization: 'Bearer ' + token }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setUser(data.data);
-        } else {
-          localStorage.removeItem('dugout_token'); // 만료된 토큰 삭제
-        }
-      })
-      .catch(() => localStorage.removeItem('dugout_token'));
+      fetch(SERVER + '/auth/me', { headers: { Authorization: 'Bearer ' + token } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setUser(data.data);
+            if (!data.data.nickname) setNeedNickname(true);
+          } else {
+            localStorage.removeItem('dugout_token');
+          }
+        })
+        .catch(() => localStorage.removeItem('dugout_token'));
     }
   }, []);
 
   const login = () => { window.location.href = SERVER + '/auth/google'; };
-  const logout = () => { localStorage.removeItem('dugout_token'); setUser(null); };
+  const logout = () => { localStorage.removeItem('dugout_token'); setUser(null); setNeedNickname(false); };
+  const completeNickname = (nickname) => {
+    setUser(prev => ({ ...prev, nickname }));
+    setNeedNickname(false);
+  };
 
-  return { user, login, logout };
+  return { user, login, logout, needNickname, completeNickname };
 }
 
 function App() {
   const [tab, setTab] = useState('home');
-  const { user, login, logout } = useAuth();
+  const { user, login, logout, needNickname, completeNickname } = useAuth();
 
   return (
     <div style={{
@@ -62,6 +136,11 @@ function App() {
       maxWidth: 430, margin: '0 auto',
       display: 'flex', flexDirection: 'column',
     }}>
+      {/* 닉네임 설정 모달 */}
+      {needNickname && user && (
+        <NicknameModal user={user} onComplete={completeNickname} />
+      )}
+
       {/* 상단 헤더 */}
       <div style={{
         padding: '12px 16px', borderBottom: '1px solid #1e2d45',
@@ -78,7 +157,7 @@ function App() {
         </div>
         {user ? (
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:12, color:'#10b981' }}>● {user.name}</span>
+            <span style={{ fontSize:12, color:'#10b981' }}>● {user.nickname || user.name}</span>
             <button onClick={logout} style={{ fontSize:11, color:'#64748b', background:'transparent', border:'none', cursor:'pointer' }}>로그아웃</button>
           </div>
         ) : (
@@ -91,9 +170,9 @@ function App() {
 
       {/* 메인 콘텐츠 */}
       <div style={{ flex:1, overflowY:'auto' }}>
-        {tab==='home' && <Home onGoLive={() => setTab('live')} />}
-        {tab==='live' && <Live user={user} />}
-        {tab==='board' && <Board user={user} />}
+        {tab==='home'    && <Home onGoLive={() => setTab('live')} />}
+        {tab==='live'    && <Live user={user} />}
+        {tab==='board'   && <Board user={user} />}
         {tab==='profile' && <Profile user={user} onLogout={logout} />}
       </div>
 
@@ -103,10 +182,10 @@ function App() {
         backgroundColor:'#0d1220', position:'sticky', bottom:0,
       }}>
         {[
-          { id:'home', label:'홈', icon:'🏠' },
-          { id:'live', label:'라이브', icon:'📡' },
-          { id:'board', label:'게시판', icon:'📋' },
-          { id:'profile', label:'MY', icon:'👤' },
+          { id:'home',    label:'홈',    icon:'🏠' },
+          { id:'live',    label:'라이브', icon:'📡' },
+          { id:'board',   label:'게시판', icon:'📋' },
+          { id:'profile', label:'MY',    icon:'👤' },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex:1, padding:'10px 0 12px', border:'none',
