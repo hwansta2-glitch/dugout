@@ -5,6 +5,32 @@ const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 // today는 모듈 레벨에서 한 번만 생성
 const TODAY = new Date();
 
+// 경기장 좌표
+const STADIUM_COORDS = {
+  '잠실':  { lat: 37.5122, lon: 127.0722 },
+  '수원':  { lat: 37.2970, lon: 127.0100 },
+  '인천':  { lat: 37.4359, lon: 126.6932 },
+  '문학':  { lat: 37.4359, lon: 126.6932 },
+  '대전':  { lat: 36.3170, lon: 127.4288 },
+  '광주':  { lat: 35.1685, lon: 126.8889 },
+  '대구':  { lat: 35.8411, lon: 128.6814 },
+  '창원':  { lat: 35.2225, lon: 128.5822 },
+  '사직':  { lat: 35.1940, lon: 129.0613 },
+  '고척':  { lat: 37.4982, lon: 126.8672 },
+  '포항':  { lat: 36.0104, lon: 129.3608 },
+};
+
+function getWeatherEmoji(code, rain) {
+  if (rain >= 50) return '🌧️';
+  if (rain >= 30) return '🌦️';
+  if (code <= 1)  return '☀️';
+  if (code <= 3)  return '⛅';
+  if (code <= 48) return '🌫️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '🌨️';
+  return '🌩️';
+}
+
 function toDateStr(date) {
   const yyyy = date.getFullYear();
   const mm   = String(date.getMonth()+1).padStart(2,'0');
@@ -280,17 +306,17 @@ function GameCard({ game, onClick }) {
           {isLive && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
             <span style={{ fontSize:10, color:'#ef4444', border:'1px solid #ef444433', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>● LIVE</span>
             {game.inning && <div style={{ fontSize:11, color:'#94a3b8' }}>{game.inning}</div>}
-            {game.stadium && <div style={{ fontSize:10, color:'#475569' }}>🏟 {game.stadium}</div>}
+            {game.stadium && <div style={{ fontSize:10, color:'#475569' }}>🏟 {game.stadium} {game.weather}</div>}
           </div>}
           {isUpcoming && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
             <span style={{ fontSize:10, color:'#3b82f6', border:'1px solid #3b82f644', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>예정</span>
             <div style={{ fontSize:12, color:'#64748b', marginTop:2 }}>{game.startTime}</div>
             {countdown && <div style={{ fontSize:10, color:'#f59e0b', fontWeight:600 }}>⏱ {countdown}</div>}
-            {game.stadium && <div style={{ fontSize:10, color:'#475569', marginTop:1 }}>🏟 {game.stadium}</div>}
+            {game.stadium && <div style={{ fontSize:10, color:'#475569', marginTop:1 }}>🏟 {game.stadium} {game.weather}</div>}
           </div>}
           {isDone && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
             <span style={{ fontSize:10, color:'#64748b', border:'1px solid #64748b44', borderRadius:4, padding:'2px 6px' }}>종료</span>
-            {game.stadium && <div style={{ fontSize:10, color:'#475569', marginTop:2 }}>🏟 {game.stadium}</div>}
+            {game.stadium && <div style={{ fontSize:10, color:'#475569', marginTop:2 }}>🏟 {game.stadium} {game.weather}</div>}
           </div>}
         </div>
         <div style={{ textAlign:'center', flex:1 }}>
