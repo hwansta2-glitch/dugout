@@ -5,6 +5,9 @@ const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 // today는 모듈 레벨에서 한 번만 생성
 const TODAY = new Date();
 
+// 날씨 캐시
+const weatherCache = {};
+
 // 경기장 좌표
 const STADIUM_COORDS = {
   '잠실':  { lat: 37.5122, lon: 127.0722 },
