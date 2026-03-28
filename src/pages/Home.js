@@ -268,6 +268,7 @@ function GameCard({ game, onClick }) {
       {isLive && <div style={{ height:2, background:'linear-gradient(90deg,#ef4444,#f59e0b)', position:'absolute', top:0, left:0, right:0 }} />}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:isLive?6:0 }}>
         <div style={{ textAlign:'center', flex:1 }}>
+          <div style={{ fontSize:10, color:'#475569', fontWeight:600, marginBottom:3 }}>원정</div>
           <div style={{ fontSize:17, fontWeight:900, color:isDone&&!winnerAway?'#64748b':'#e2e8f0' }}>{game.awayTeam}</div>
           {game.awayScore != null && <div style={{ fontSize:28, fontWeight:900, color:winnerAway?'#fff':isDone?'#64748b':'#e2e8f0', marginTop:2 }}>{game.awayScore}</div>}
         </div>
@@ -275,18 +276,21 @@ function GameCard({ game, onClick }) {
           {isLive && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
             <span style={{ fontSize:10, color:'#ef4444', border:'1px solid #ef444433', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>● LIVE</span>
             {game.inning && <div style={{ fontSize:11, color:'#94a3b8' }}>{game.inning}</div>}
+            {game.stadium && <div style={{ fontSize:10, color:'#475569' }}>🏟 {game.stadium}</div>}
           </div>}
           {isUpcoming && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
             <span style={{ fontSize:10, color:'#3b82f6', border:'1px solid #3b82f644', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>예정</span>
             <div style={{ fontSize:12, color:'#64748b', marginTop:2 }}>{game.startTime}</div>
             {countdown && <div style={{ fontSize:10, color:'#f59e0b', fontWeight:600 }}>⏱ {countdown}</div>}
+            {game.stadium && <div style={{ fontSize:10, color:'#475569', marginTop:1 }}>🏟 {game.stadium}</div>}
           </div>}
           {isDone && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
             <span style={{ fontSize:10, color:'#64748b', border:'1px solid #64748b44', borderRadius:4, padding:'2px 6px' }}>종료</span>
-            {game.stadium && <div style={{ fontSize:10, color:'#475569', marginTop:2 }}>{game.stadium}</div>}
+            {game.stadium && <div style={{ fontSize:10, color:'#475569', marginTop:2 }}>🏟 {game.stadium}</div>}
           </div>}
         </div>
         <div style={{ textAlign:'center', flex:1 }}>
+          <div style={{ fontSize:10, color:'#3b82f6', fontWeight:600, marginBottom:3 }}>홈</div>
           <div style={{ fontSize:17, fontWeight:900, color:isDone&&!winnerHome?'#64748b':'#e2e8f0' }}>{game.homeTeam}</div>
           {game.homeScore != null && <div style={{ fontSize:28, fontWeight:900, color:winnerHome?'#fff':isDone?'#64748b':'#e2e8f0', marginTop:2 }}>{game.homeScore}</div>}
         </div>
