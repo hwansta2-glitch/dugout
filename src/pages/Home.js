@@ -404,7 +404,7 @@ function Home({ onGoLive }) {
           awayScore: scores.awayScore ?? null,
           homeScore: scores.homeScore ?? null,
           innings: scores.innings || [],
-          state: scores.awayScore != null ? '종료' : '예정',
+          state: scores.awayScore != null ? '종료' : isPast ? '종료' : '예정',
           startTime: g.G_TM, stadium: g.S_NM, dateStr: dateStr,
           awayPitcher: g.T_PIT_P_NM, homePitcher: g.B_PIT_P_NM,
           winPitcher: g.W_PIT_P_NM, losePitcher: g.L_PIT_P_NM, savePitcher: g.S_PIT_P_NM,
