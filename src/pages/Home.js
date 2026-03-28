@@ -21,19 +21,22 @@ function isSameDay(a, b) {
 }
 
 // ── 카운트다운 훅 ────────────────────────────────────
-function useCountdown(startTime, active) {
+function useCountdown(startTime, active, dateStr) {
   const [text, setText] = useState('');
   useEffect(() => {
-    if (!active || !startTime) return;
+    if (!active || !startTime || !dateStr) return;
     const calc = () => {
       const now = new Date();
       const [h, m] = startTime.split(':').map(Number);
-      const start = new Date();
-      start.setHours(h, m, 0, 0);
+      const yr = parseInt(dateStr.slice(0,4));
+      const mo = parseInt(dateStr.slice(4,6)) - 1;
+      const dy = parseInt(dateStr.slice(6,8));
+      const start = new Date(yr, mo, dy, h, m, 0);
       const diff = start - now;
       if (diff <= 0) { setText('곧 시작'); return; }
-      const hours   = Math.floor(diff / 3600000);
-      const minutes = Math.floor((diff % 3600000) / 60000);
+      const totalMins = Math.floor(diff / 60000);
+      const hours   = Math.floor(totalMins / 60);
+      const minutes = totalMins % 60;
       const seconds = Math.floor((diff % 60000) / 1000);
       if (hours >= 24) { setText(''); return; }
       setText(hours > 0 ? `${hours}시간 ${minutes}분 후` : `${minutes}분 ${seconds}초 후`);
@@ -41,7 +44,7 @@ function useCountdown(startTime, active) {
     calc();
     const t = setInterval(calc, 1000);
     return () => clearInterval(t);
-  }, [active, startTime]);
+  }, [active, startTime, dateStr]);
   return text;
 }
 
@@ -51,7 +54,7 @@ function GameDetailModal({ game, onClose }) {
   const isUpcoming = !isDone && game.awayScore == null;
   const winnerAway = isDone && game.awayScore > game.homeScore;
   const winnerHome = isDone && game.homeScore > game.awayScore;
-  const countdown  = useCountdown(game.startTime, isUpcoming);
+  const countdown  = useCountdown(game.startTime, isUpcoming, game.dateStr);
 
   return (
     <div style={{ position:'fixed', inset:0, background:'#000c', zIndex:200, display:'flex', alignItems:'flex-end' }} onClick={onClose}>
@@ -262,7 +265,7 @@ function GameCard({ game, onClick }) {
   const isUpcoming = !isLive && !isDone;
   const winnerAway = isDone && game.awayScore != null && game.awayScore > game.homeScore;
   const winnerHome = isDone && game.homeScore != null && game.homeScore > game.awayScore;
-  const countdown  = useCountdown(game.startTime, isUpcoming);
+  const countdown  = useCountdown(game.startTime, isUpcoming, game.dateStr);
 
   return (
     <div onClick={onClick} style={{ background:'#111827', border:isLive?'1px solid #ef444444':'1px solid #1e2d45', borderRadius:14, padding:14, marginBottom:10, cursor:'pointer', position:'relative', overflow:'hidden' }}>
@@ -373,7 +376,7 @@ function Home({ onGoLive }) {
           homeScore: scores.homeScore ?? null,
           innings: scores.innings || [],
           state: scores.awayScore != null ? '종료' : '예정',
-          startTime: g.G_TM, stadium: g.S_NM,
+          startTime: g.G_TM, stadium: g.S_NM, dateStr: dateStr,
           awayPitcher: g.T_PIT_P_NM, homePitcher: g.B_PIT_P_NM,
           winPitcher: g.W_PIT_P_NM, losePitcher: g.L_PIT_P_NM, savePitcher: g.S_PIT_P_NM,
         };
