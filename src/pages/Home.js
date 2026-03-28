@@ -36,7 +36,6 @@ function useCountdown(startTime, active) {
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
       if (hours >= 24) { setText(''); return; }
-      if (hours >= 24) { setText(''); return; }
       setText(hours > 0 ? `${hours}시간 ${minutes}분 후` : `${minutes}분 ${seconds}초 후`);
     };
     calc();
