@@ -367,6 +367,15 @@ function Home({ onGoLive }) {
 
       if (!data?.game?.length) { setGames([]); setGamesLoading(false); return; }
 
+      // 날짜가 오늘 이전이면 isPast = true
+      const now2 = new Date();
+      const gDate = new Date(
+        parseInt(dateStr.slice(0,4)),
+        parseInt(dateStr.slice(4,6))-1,
+        parseInt(dateStr.slice(6,8))
+      );
+      const isPast = gDate < new Date(now2.getFullYear(), now2.getMonth(), now2.getDate());
+
       // 오늘만 스코어보드 파싱
       let scoreMap = {};
       if (isSameDay(date, TODAY) && scoreRes) {
