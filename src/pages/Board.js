@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
+const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 const TABS = [
   { key:'team', label:'팀 응원' },
   { key:'together', label:'같이가요' },
@@ -7,35 +8,6 @@ const TABS = [
   { key:'news', label:'뉴스' },
   { key:'mlb', label:'MLB' },
 ];
-
-const POSTS = {
-  team: [
-    { id:1, team:'LG', title:'임찬규 오늘 8이닝 1실점 레전드', author:'야구광123', likes:234, comments:45, time:'19분 전', hot:true, views:1203 },
-    { id:2, team:'KIA', title:'KIA 타선 오늘 왜이래... 답답', author:'호랑이팬', likes:89, comments:23, time:'32분 전', hot:false, views:445 },
-    { id:3, team:'LG', title:'박찬호 올시즌 커리어하이 각이다', author:'LG사랑', likes:178, comments:67, time:'1시간 전', hot:true, views:892 },
-    { id:4, team:'한화', title:'류현진 컴백 진짜냐?? 설레는데', author:'이글스맨', likes:312, comments:134, time:'4시간 전', hot:true, views:2341 },
-  ],
-  together: [
-    { id:1, title:'[LG] 4/5 잠실 LG vs 두산 같이가요', author:'직관왕', likes:12, comments:8, time:'10분 전', date:'4/5(토)', seat:'1루 익사이팅존', left:2, views:89 },
-    { id:2, title:'[KIA] 광주 원정 버스 같이 타실 분', author:'광주원정대', likes:34, comments:21, time:'1시간 전', date:'4/12(토)', seat:'3루 응원석', left:5, views:234 },
-    { id:3, title:'[한화] 대전 원정 4명 팟 구합니다', author:'이글스원정', likes:8, comments:6, time:'2시간 전', date:'4/8(일)', seat:'외야 응원석', left:3, views:123 },
-  ],
-  photo: [
-    { id:1, title:'오늘 잠실 석양 너무 예쁘지 않아요?', author:'직관러99', likes:445, comments:67, time:'30분 전', emoji:'🌅', hot:true, views:2341 },
-    { id:2, title:'임찬규 오늘 피칭폼 찍었어요', author:'야구사진관', likes:234, comments:45, time:'1시간 전', emoji:'📸', hot:true, views:1203 },
-    { id:3, title:'오늘 홈런볼 잡았어요!!!', author:'홈런포수', likes:892, comments:234, time:'4시간 전', emoji:'⚾', hot:true, views:6782 },
-  ],
-  news: [
-    { id:1, title:'[속보] 류현진, 한화와 2년 계약 발표', author:'야구뉴스', likes:567, comments:234, time:'2시간 전', tag:'이적', hot:true, views:12341 },
-    { id:2, title:'2026 KBO 개막 일정 확정', author:'KBO공식', likes:234, comments:89, time:'1일 전', tag:'일정', hot:true, views:8923 },
-    { id:3, title:'KBO 외국인 선수 쿼터 확대 검토', author:'스포츠기자', likes:123, comments:67, time:'3시간 전', tag:'공지', hot:false, views:3421 },
-  ],
-  mlb: [
-    { id:1, title:'오타니 오늘 2홈런+7이닝... 외계인', author:'MLB팬', likes:892, comments:345, time:'1시간 전', player:'오타니', hot:true, views:15234 },
-    { id:2, title:'이정후 멀티히트! 타율 .298', author:'SF팬', likes:567, comments:123, time:'2시간 전', player:'이정후', hot:true, views:8923 },
-    { id:3, title:'김하성 수비 하이라이트 미쳤다', author:'한인팬', likes:234, comments:78, time:'3시간 전', player:'김하성', hot:false, views:4521 },
-  ],
-};
 
 function PostCard({ post, type, onLike, liked, reported, onReport }) {
   if (reported) {
@@ -45,38 +17,31 @@ function PostCard({ post, type, onLike, liked, reported, onReport }) {
       </div>
     );
   }
-
   return (
     <div style={{ background:'#111827', border:`1px solid ${post.hot ? '#243550' : '#1e2d45'}`, borderRadius:12, padding:'12px 14px', marginBottom:8 }}>
-      {/* 상단 배지 */}
       <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:7 }}>
         {post.hot && <span style={{ fontSize:10, color:'#ef4444', border:'1px solid #ef444444', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>🔥 HOT</span>}
         {post.team && <span style={{ fontSize:10, color:'#94a3b8', border:'1px solid #1e2d45', borderRadius:4, padding:'2px 7px' }}>{post.team}</span>}
         {post.tag && <span style={{ fontSize:10, color:'#3b82f6', border:'1px solid #3b82f644', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>{post.tag}</span>}
-        {post.player && <span style={{ fontSize:10, color:'#10b981', border:'1px solid #10b98144', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>{post.player}</span>}
-        <span style={{ fontSize:10, color:'#64748b', marginLeft:'auto' }}>{post.time}</span>
+        <span style={{ fontSize:10, color:'#64748b', marginLeft:'auto' }}>
+          {post.createdAt ? new Date(post.createdAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : post.time}
+        </span>
       </div>
-
-      {/* 제목 */}
-      <div style={{ fontSize:13, fontWeight:600, color:'#e2e8f0', marginBottom: type==='together' ? 8 : 7, lineHeight:1.4 }}>
-        {type==='photo' && post.emoji + ' '}{post.title}
+      <div style={{ fontSize:13, fontWeight:600, color:'#e2e8f0', marginBottom:7, lineHeight:1.4 }}>
+        {post.title}
       </div>
-
-      {/* 같이가요 정보 */}
-      {type === 'together' && (
+      {type === 'together' && post.seat && (
         <div style={{ display:'flex', gap:8, marginBottom:8 }}>
           <span style={{ fontSize:11, color:'#94a3b8' }}>📍 {post.seat}</span>
-          <span style={{ fontSize:11, color:'#ef4444', fontWeight:700 }}>잔여 {post.left}자리</span>
-          <span style={{ fontSize:11, color:'#64748b' }}>📅 {post.date}</span>
+          {post.left && <span style={{ fontSize:11, color:'#ef4444', fontWeight:700 }}>잔여 {post.left}자리</span>}
+          {post.date && <span style={{ fontSize:11, color:'#64748b' }}>📅 {post.date}</span>}
         </div>
       )}
-
-      {/* 하단 */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div style={{ display:'flex', gap:8 }}>
-          <span style={{ fontSize:11, color:'#64748b' }}>{post.author}</span>
-          <span style={{ fontSize:11, color:'#64748b' }}>💬 {post.comments}</span>
-          <span style={{ fontSize:11, color:'#64748b' }}>👁 {post.views}</span>
+          <span style={{ fontSize:11, color:'#64748b' }}>{post.author?.name || post.author}</span>
+          <span style={{ fontSize:11, color:'#64748b' }}>💬 {post.comments ?? post._count?.comments ?? 0}</span>
+          <span style={{ fontSize:11, color:'#64748b' }}>👁 {post.views ?? 0}</span>
         </div>
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
           <button onClick={onReport} style={{ fontSize:11, color:'#64748b', background:'transparent', border:'none', cursor:'pointer' }}>신고</button>
@@ -87,31 +52,148 @@ function PostCard({ post, type, onLike, liked, reported, onReport }) {
             background: liked ? '#ef444422' : 'transparent',
             fontSize:11, color: liked ? '#ef4444' : '#64748b',
             fontWeight:700, cursor:'pointer',
-          }}>👍 {post.likes + (liked ? 1 : 0)}</button>
+          }}>👍 {(post.likes ?? 0) + (liked ? 1 : 0)}</button>
         </div>
       </div>
     </div>
   );
 }
 
-function Board() {
-  const [tab, setTab] = useState('team');
-  const [apiPosts, setApiPosts] = useState([]);
+// ✅ 글쓰기 모달
+function WriteModal({ tab, onClose, onSuccess }) {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [team, setTeam] = useState('LG');
+  const [submitting, setSubmitting] = useState(false);
 
-useEffect(() => {
-  fetch('http://localhost:3001/api/posts')
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) setApiPosts(data.data);
-    })
-    .catch(err => console.log('서버 연결 안됨:', err));
-}, []);
+  const KBO_TEAMS = ['LG','KIA','삼성','두산','롯데','SSG','키움','NC','한화','KT'];
+
+  const submit = async () => {
+    if (!title.trim()) return alert('제목을 입력해주세요');
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('dugout_token');
+      const res = await fetch(SERVER + '/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          boardType: tab,
+          team: tab === 'team' ? team : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onSuccess();
+      } else {
+        alert(data.message || '글쓰기 실패');
+      }
+    } catch(e) {
+      alert('서버 연결 실패');
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'#000000cc', zIndex:100, display:'flex', alignItems:'flex-end' }}>
+      <div style={{ width:'100%', background:'#0f172a', borderRadius:'16px 16px 0 0', padding:'20px 16px 40px' }}>
+        {/* 헤더 */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <span style={{ fontSize:15, fontWeight:700, color:'#e2e8f0' }}>✏️ 글쓰기</span>
+          <button onClick={onClose} style={{ background:'transparent', border:'none', color:'#64748b', fontSize:20, cursor:'pointer' }}>✕</button>
+        </div>
+
+        {/* 팀 선택 (팀응원 탭일 때만) */}
+        {tab === 'team' && (
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:11, color:'#64748b', marginBottom:6 }}>응원 팀</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {KBO_TEAMS.map(t => (
+                <button key={t} onClick={() => setTeam(t)} style={{
+                  padding:'4px 10px', borderRadius:12, fontSize:12, cursor:'pointer',
+                  border:`1px solid ${team===t ? '#3b82f6' : '#1e2d45'}`,
+                  background: team===t ? '#3b82f622' : 'transparent',
+                  color: team===t ? '#3b82f6' : '#94a3b8',
+                  fontWeight: team===t ? 700 : 400,
+                }}>{t}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 제목 */}
+        <input
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder="제목을 입력하세요"
+          maxLength={100}
+          style={{
+            width:'100%', padding:'10px 12px', borderRadius:8,
+            background:'#111827', border:'1px solid #1e2d45',
+            color:'#e2e8f0', fontSize:13, marginBottom:10,
+            boxSizing:'border-box', outline:'none',
+          }}
+        />
+
+        {/* 내용 */}
+        <textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          placeholder="내용을 입력하세요 (선택)"
+          rows={4}
+          style={{
+            width:'100%', padding:'10px 12px', borderRadius:8,
+            background:'#111827', border:'1px solid #1e2d45',
+            color:'#e2e8f0', fontSize:13, marginBottom:14,
+            boxSizing:'border-box', resize:'none', outline:'none',
+          }}
+        />
+
+        {/* 등록 버튼 */}
+        <button
+          onClick={submit}
+          disabled={submitting}
+          style={{
+            width:'100%', padding:'12px', borderRadius:10,
+            background: submitting ? '#1e2d45' : '#3b82f6',
+            border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer',
+          }}
+        >{submitting ? '등록 중...' : '게시글 등록'}</button>
+      </div>
+    </div>
+  );
+}
+
+function Board({ user }) {
+  const [tab, setTab] = useState('team');
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showWrite, setShowWrite] = useState(false);
   const [likes, setLikes] = useState({});
   const [reports, setReports] = useState({});
 
-  const posts = POSTS[tab] || [];
-  const hotPosts = posts.filter(p => p.hot);
-  const normalPosts = posts.filter(p => !p.hot);
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${SERVER}/api/posts?boardType=${tab}`);
+      const data = await res.json();
+      if (data.success) setPosts(data.data);
+    } catch(e) {
+      console.log('게시글 불러오기 실패:', e);
+    }
+    setLoading(false);
+  }, [tab]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  const hotPosts = posts.filter(p => p.hot || p.likes >= 100);
+  const normalPosts = posts.filter(p => !p.hot && (p.likes ?? 0) < 100);
 
   return (
     <div style={{ paddingBottom:80 }}>
@@ -128,16 +210,27 @@ useEffect(() => {
       </div>
 
       <div style={{ padding:'10px 14px' }}>
+        {/* 로딩 */}
+        {loading && (
+          <div style={{ textAlign:'center', padding:'40px 0', color:'#64748b', fontSize:13 }}>불러오는 중...</div>
+        )}
+
+        {/* 게시글 없을 때 */}
+        {!loading && posts.length === 0 && (
+          <div style={{ textAlign:'center', padding:'40px 0', color:'#64748b', fontSize:13 }}>
+            아직 게시글이 없어요. 첫 글을 작성해보세요! ✍️
+          </div>
+        )}
+
         {/* HOT 게시글 */}
-        {hotPosts.length > 0 && (
+        {!loading && hotPosts.length > 0 && (
           <div style={{ marginBottom:12 }}>
             <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:8 }}>
               <span style={{ fontSize:13 }}>🔥</span>
               <span style={{ fontSize:11, fontWeight:700, color:'#ef4444' }}>HOT 게시글</span>
             </div>
             {hotPosts.slice(0,3).map(post => (
-              <PostCard
-                key={post.id} post={post} type={tab}
+              <PostCard key={post.id} post={post} type={tab}
                 liked={likes[post.id]} onLike={() => setLikes(p => ({ ...p, [post.id]: !p[post.id] }))}
                 reported={reports[post.id]} onReport={() => setReports(p => ({ ...p, [post.id]: true }))}
               />
@@ -147,9 +240,8 @@ useEffect(() => {
         )}
 
         {/* 일반 게시글 */}
-        {normalPosts.map(post => (
-          <PostCard
-            key={post.id} post={post} type={tab}
+        {!loading && normalPosts.map(post => (
+          <PostCard key={post.id} post={post} type={tab}
             liked={likes[post.id]} onLike={() => setLikes(p => ({ ...p, [post.id]: !p[post.id] }))}
             reported={reports[post.id]} onReport={() => setReports(p => ({ ...p, [post.id]: true }))}
           />
@@ -157,11 +249,21 @@ useEffect(() => {
 
         {/* 글쓰기 버튼 */}
         <div style={{ textAlign:'center', marginTop:12 }}>
-          <button style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-            ✏️ 글쓰기
-          </button>
+          <button
+            onClick={() => setShowWrite(true)}
+            style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}
+          >✏️ 글쓰기</button>
         </div>
       </div>
+
+      {/* 글쓰기 모달 */}
+      {showWrite && (
+        <WriteModal
+          tab={tab}
+          onClose={() => setShowWrite(false)}
+          onSuccess={() => { setShowWrite(false); fetchPosts(); }}
+        />
+      )}
     </div>
   );
 }
