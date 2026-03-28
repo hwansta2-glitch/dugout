@@ -349,7 +349,7 @@ function WriteModal({ tab, onClose, onSuccess }) {
 }
 
 // ── 메인 Board ───────────────────────────────────────
-function Board({ user }) {
+function Board({ user, onLoginRequired }) {
   const [tab, setTab]             = useState('team');
   const [posts, setPosts]         = useState([]);
   const [news, setNews]           = useState([]);
@@ -526,11 +526,17 @@ function Board({ user }) {
               />
             ))}
             {searchResults === null && (
-              <div style={{ textAlign:'center', marginTop:12 }}>
-                <button onClick={() => setShowWrite(true)} style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                  ✏️ 글쓰기
-                </button>
-              </div>
+<div style={{ textAlign:'center', marginTop:12 }}>
+  {user ? (
+    <button onClick={() => setShowWrite(true)} style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+      ✏️ 글쓰기
+    </button>
+  ) : (
+    <button onClick={onLoginRequired} style={{ padding:'10px 24px', background:'#1e2d45', border:'1px solid #243550', borderRadius:20, color:'#64748b', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+      🔐 로그인 후 글쓰기 가능
+    </button>
+  )}
+</div>
             )}
           </>
         )}

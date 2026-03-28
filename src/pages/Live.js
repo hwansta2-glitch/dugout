@@ -4,14 +4,7 @@ import { io } from 'socket.io-client';
 const socket = io(process.env.REACT_APP_SERVER_URL || 'http://localhost:3001');
 const ROOM_ID = 'general';
 
-const INIT_MSGS = [
-  { id:1, user:'야구광123', av:'⚾', msg:'임찬규 오늘 진짜 레전드!', time:'19:24', pro:false },
-  { id:2, user:'홈런왕', av:'🏠', msg:'8이닝 87구 ERA 2.84 ㄷㄷ', time:'19:25', pro:true },
-  { id:3, user:'직관러', av:'🎫', msg:'잠실 분위기 폭발!!!', time:'19:25', pro:false },
-];
-
 const BAD_WORDS = ['시발','씨발','병신','ㅅㅂ','ㅂㅅ','개새끼','지랄','닥쳐'];
-
 function hasBadWord(text) {
   return BAD_WORDS.some(w => text.toLowerCase().includes(w));
 }
@@ -32,8 +25,7 @@ function Diamond({ bases }) {
       ].map(({ key, l, t }) => (
         <div key={key} style={{
           position:'absolute', left:l, top:t,
-          width:18, height:18,
-          transform:'rotate(45deg)',
+          width:18, height:18, transform:'rotate(45deg)',
           border: `2px solid ${bases[key] ? '#f59e0b' : '#243550'}`,
           background: bases[key] ? '#f59e0b88' : 'transparent',
           transition:'all 0.3s',
@@ -46,45 +38,48 @@ function Diamond({ bases }) {
       }} />
     </div>
   );
-}function Live({ user }) {
-  const [msgs, setMsgs] = useState(INIT_MSGS);
+}
+
+function Live({ user, onLoginRequired }) {
+  const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [warning, setWarning] = useState(false);
   const [myVote, setMyVote] = useState(null);
   const [votes, setVotes] = useState({ hit:62, out:38 });
   const bottomRef = useRef(null);
-  // 소켓 연결
-useEffect(() => {
-  socket.emit('join', ROOM_ID);
 
-  socket.on('chat_history', (history) => {
-    const formatted = history.map(m => ({
-      id: m.id,
-      user: m.user?.name || '익명',
-      av: '⚾',
-      msg: m.message,
-      time: new Date(m.createdAt).toLocaleTimeString('ko', { hour:'2-digit', minute:'2-digit' }),
-      pro: false,
-    }));
-    setMsgs(formatted);
-  });
+  useEffect(() => {
+    socket.emit('join', ROOM_ID);
+    socket.on('chat_history', (history) => {
+      const formatted = history.map(m => ({
+        id: m.id,
+        user: m.user?.nickname || m.user?.name || '익명',
+        av: '⚾',
+        msg: m.message,
+        time: new Date(m.createdAt).toLocaleTimeString('ko', { hour:'2-digit', minute:'2-digit' }),
+        pro: false,
+      }));
+      setMsgs(formatted);
+    });
+    socket.on('receive_message', (data) => {
+      setMsgs(prev => [...prev, {
+        id: data.id,
+        user: data.userName,
+        av: '⚾',
+        msg: data.message,
+        time: new Date(data.createdAt).toLocaleTimeString('ko', { hour:'2-digit', minute:'2-digit' }),
+        pro: false,
+      }]);
+    });
+    return () => {
+      socket.off('chat_history');
+      socket.off('receive_message');
+    };
+  }, []);
 
-  socket.on('receive_message', (data) => {
-    setMsgs(prev => [...prev, {
-      id: data.id,
-      user: data.userName,
-      av: '⚾',
-      msg: data.message,
-      time: new Date(data.createdAt).toLocaleTimeString('ko', { hour:'2-digit', minute:'2-digit' }),
-      pro: false,
-    }]);
-  });
-
-  return () => {
-    socket.off('chat_history');
-    socket.off('receive_message');
-  };
-}, []);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior:'smooth' });
+  }, [msgs]);
 
   const gs = {
     inning:8, half:'말', outs:1,
@@ -95,22 +90,18 @@ useEffect(() => {
     count:{ balls:2, strikes:1 },
   };
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior:'smooth' });
-  }, [msgs]);
-
-const sendMsg = () => {
-  if (!input.trim()) return;
-  if (hasBadWord(input)) { setWarning(true); return; }
-socket.emit('send_message', {
-  message: input,
-  userId: user?.id || null,
-  userName: user?.nickname || user?.name || '익명',
-  roomId: ROOM_ID,
-});
-  setInput('');
-  setWarning(false);
-};
+  const sendMsg = () => {
+    if (!input.trim()) return;
+    if (hasBadWord(input)) { setWarning(true); return; }
+    socket.emit('send_message', {
+      message: input,
+      userId: user?.id || null,
+      userName: user?.nickname || user?.name || '익명',
+      roomId: ROOM_ID,
+    });
+    setInput('');
+    setWarning(false);
+  };
 
   const vote = (side) => {
     if (myVote) return;
@@ -122,6 +113,7 @@ socket.emit('send_message', {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', paddingBottom:80 }}>
+      {/* 전광판 */}
       <div style={{ background:'#0d1220', padding:'12px 16px', borderBottom:'1px solid #1e2d45' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
           <div style={{ flex:1, textAlign:'center' }}>
@@ -153,6 +145,7 @@ socket.emit('send_message', {
             ))}
           </div>
         </div>
+        {/* 예측 투표 */}
         <div>
           <div style={{ fontSize:11, color:'#64748b', marginBottom:6, textAlign:'center' }}>이번 타석 예측</div>
           <div style={{ display:'flex', gap:6 }}>
@@ -171,15 +164,21 @@ socket.emit('send_message', {
         </div>
       </div>
 
+      {/* 채팅 메시지 */}
       <div style={{ padding:'10px 14px', minHeight:140 }}>
-        {msgs.slice(-6).map((m,i,arr) => {
+        {msgs.length === 0 && (
+          <div style={{ textAlign:'center', padding:'20px 0', color:'#64748b', fontSize:12 }}>
+            채팅을 시작해보세요! 💬
+          </div>
+        )}
+        {msgs.slice(-20).map((m, i, arr) => {
           const sh = i===0 || arr[i-1].user !== m.user;
           return (
             <div key={m.id} style={{ marginBottom: sh ? 10 : 3 }}>
               {sh && (
                 <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:3 }}>
                   <div style={{ width:24, height:24, borderRadius:'50%', background:'#1e2d45', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12 }}>{m.av}</div>
-                  <span style={{ fontSize:12, fontWeight:700, color: m.pro ? '#f59e0b' : '#e2e8f0' }}>{m.user}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color: m.pro?'#f59e0b':'#e2e8f0' }}>{m.user}</span>
                   {m.pro && <span style={{ fontSize:9, color:'#f59e0b', border:'1px solid #f59e0b55', borderRadius:3, padding:'1px 4px' }}>PRO</span>}
                   <span style={{ fontSize:10, color:'#64748b' }}>{m.time}</span>
                 </div>
@@ -193,28 +192,53 @@ socket.emit('send_message', {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ padding:'5px 12px', display:'flex', gap:5, overflowX:'auto', borderTop:'1px solid #1e2d45' }}>
-        {['🔥','👏','😱','💪','⚾','🏆','😭'].map(r => (
-          <button key={r} onClick={() => {
-            const now = new Date();
-            setMsgs(prev => [...prev, { id:Date.now(), user:'나', av:'😎', msg:r, time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`, pro:false }]);
-          }} style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:16, padding:'3px 8px', fontSize:14, cursor:'pointer', flexShrink:0 }}>{r}</button>
-        ))}
-      </div>
-
-      <div style={{ padding:'7px 12px 12px', borderTop:'1px solid #1e2d45' }}>
-        {warning && (
-          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 10px', marginBottom:7, background:'#ef444418', border:'1px solid #ef444444', borderRadius:8 }}>
-            <span>⚠️</span>
-            <span style={{ fontSize:11, color:'#ef4444', fontWeight:700 }}>욕설·비하 표현은 사용 금지입니다</span>
-          </div>
-        )}
-        <div style={{ display:'flex', gap:7 }}>
-          <input value={input} onChange={e => { setInput(e.target.value); if(warning) setWarning(false); }} onKeyDown={e => e.key==='Enter' && sendMsg()} placeholder="채팅 입력..." style={{ flex:1, background: warning?'#ef444411':'#0d1220', border:`1px solid ${warning?'#ef444466':'#243550'}`, borderRadius:10, padding:'9px 12px', color:'#e2e8f0', fontSize:13, outline:'none' }} />
-          <button onClick={sendMsg} style={{ background:'#3b82f6', border:'none', borderRadius:10, padding:'9px 15px', color:'#fff', fontWeight:700, fontSize:12, cursor:'pointer' }}>전송</button>
+      {/* 이모지 반응 - 로그인한 유저만 */}
+      {user && (
+        <div style={{ padding:'5px 12px', display:'flex', gap:5, overflowX:'auto', borderTop:'1px solid #1e2d45' }}>
+          {['🔥','👏','😱','💪','⚾','🏆','😭'].map(r => (
+            <button key={r} onClick={() => {
+              const now = new Date();
+              socket.emit('send_message', {
+                message: r,
+                userId: user?.id || null,
+                userName: user?.nickname || user?.name || '익명',
+                roomId: ROOM_ID,
+              });
+            }} style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:16, padding:'3px 8px', fontSize:14, cursor:'pointer', flexShrink:0 }}>{r}</button>
+          ))}
         </div>
-      </div>
+      )}
 
+      {/* 채팅 입력 or 로그인 유도 */}
+      {user ? (
+        <div style={{ padding:'7px 12px 12px', borderTop:'1px solid #1e2d45' }}>
+          {warning && (
+            <div style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 10px', marginBottom:7, background:'#ef444418', border:'1px solid #ef444444', borderRadius:8 }}>
+              <span>⚠️</span>
+              <span style={{ fontSize:11, color:'#ef4444', fontWeight:700 }}>욕설·비하 표현은 사용 금지입니다</span>
+            </div>
+          )}
+          <div style={{ display:'flex', gap:7 }}>
+            <input
+              value={input}
+              onChange={e => { setInput(e.target.value); if(warning) setWarning(false); }}
+              onKeyDown={e => e.key==='Enter' && sendMsg()}
+              placeholder="채팅 입력..."
+              style={{ flex:1, background: warning?'#ef444411':'#0d1220', border:`1px solid ${warning?'#ef444466':'#243550'}`, borderRadius:10, padding:'9px 12px', color:'#e2e8f0', fontSize:13, outline:'none' }}
+            />
+            <button onClick={sendMsg} style={{ background:'#3b82f6', border:'none', borderRadius:10, padding:'9px 15px', color:'#fff', fontWeight:700, fontSize:12, cursor:'pointer' }}>전송</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding:'14px 16px', borderTop:'1px solid #1e2d45', textAlign:'center', background:'#0d1220' }}>
+          <div style={{ fontSize:12, color:'#64748b', marginBottom:10 }}>
+            로그인하면 실시간 채팅에 참여할 수 있어요 💬
+          </div>
+          <button onClick={onLoginRequired} style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+            🔐 Google 로그인
+          </button>
+        </div>
+      )}
     </div>
   );
 }
