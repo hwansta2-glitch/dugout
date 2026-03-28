@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
+const TODAY = new Date();
 
 const FALLBACK_GAMES = [
   { id:1, gameId:'', awayTeam:'KT',   homeTeam:'LG',   awayScore:null, homeScore:null, state:'예정', startTime:'14:00', stadium:'잠실', awayPitcher:'', homePitcher:'' },
@@ -376,8 +377,7 @@ function GameCard({ game, onClick }) {
 
 // ── 메인 Home ───────────────────────────────────────
 function Home({ onGoLive }) {
-  const today = new Date();
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(TODAY);
   const [games, setGames]               = useState(FALLBACK_GAMES);
   const [hotPosts, setHotPosts]         = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -398,7 +398,7 @@ function Home({ onGoLive }) {
       if (data?.game?.length > 0) {
         // 스코어보드 (오늘 날짜만)
         let scoreMap = {};
-        const isToday = toDateStr(date) === toDateStr(today);
+        const isToday = toDateStr(date) === toDateStr(TODAY);
         if (isToday) {
           try {
             const scoreUrl   = 'https://www.koreabaseball.com/Schedule/ScoreBoard.aspx';
@@ -475,15 +475,15 @@ function Home({ onGoLive }) {
   }, [selectedDate, fetchGames]);
 
   useEffect(() => {
-    const isToday = toDateStr(selectedDate) === toDateStr(today);
+    const isToday = toDateStr(selectedDate) === toDateStr(TODAY);
     if (!isToday) return;
     const interval = setInterval(() => fetchGames(selectedDate), 60000);
     return () => clearInterval(interval);
-  }, [selectedDate, fetchGames, today]);
+  }, [selectedDate, fetchGames]);
 
   const prevDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate()-1); setSelectedDate(d); };
   const nextDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate()+1); setSelectedDate(d); };
-  const isToday = toDateStr(selectedDate) === toDateStr(today);
+  const isToday = toDateStr(selectedDate) === toDateStr(TODAY);
   const hasLive = games.some(g => g.state === 'LIVE' || g.state === '경기중');
 
   return (
