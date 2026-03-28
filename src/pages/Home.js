@@ -498,7 +498,13 @@ function Home({ onGoLive }) {
         </div>
       )}
       {!gamesLoading && games.map(game => (
-        <GameCard key={game.id} game={game} onClick={() => setSelectedGame(game)} />
+        <GameCard key={game.id} game={game} onClick={() => {
+          if (game.state === '예정' || game.state === 'LIVE' || game.state === '경기중') {
+            onGoLive(game);
+          } else {
+            setSelectedGame(game);
+          }
+        }} />
       ))}
 
       {/* HOT 게시글 */}

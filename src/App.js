@@ -119,7 +119,13 @@ function useAuth() {
 
 function App() {
   const [tab, setTab] = useState('home');
+  const [liveGame, setLiveGame] = useState(null);
   const { user, loading, login, logout, needNickname, completeNickname } = useAuth();
+
+  const goLive = (game) => {
+    setLiveGame(game);
+    setTab('live');
+  };
 
   // ✅ 로딩 중에는 아무것도 안 보여줌 (닉네임 모달 방지)
   if (loading) {
@@ -166,8 +172,8 @@ function App() {
 
       {/* 메인 콘텐츠 */}
       <div style={{ flex:1, overflowY:'auto' }}>
-        {tab==='home'    && <Home onGoLive={() => setTab('live')} />}
-        {tab==='live'    && <Live user={user} onLoginRequired={login} />}
+        {tab==='home'    && <Home onGoLive={goLive} />}
+        {tab==='live'    && <Live user={user} onLoginRequired={login} game={liveGame} />}
         {tab==='board'   && <Board user={user} onLoginRequired={login} />}
         {tab==='profile' && <Profile user={user} onLogout={logout} />}
       </div>
