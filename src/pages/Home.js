@@ -387,7 +387,7 @@ function Home({ onGoLive }) {
     fetchGames(selectedDate);
     // 오늘이면 60초마다 갱신
     if (intervalRef.current) clearInterval(intervalRef.current);
-    if (isSameDay(selectedDate, TODAY)) {
+    if (isToday(selectedDate)) {
       intervalRef.current = setInterval(() => fetchGames(selectedDate), 60000);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
