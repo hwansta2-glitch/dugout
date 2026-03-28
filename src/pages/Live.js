@@ -91,6 +91,7 @@ function Live({ user, onLoginRequired }) {
   };
 
   const sendMsg = () => {
+    if (!user) return;
     if (!input.trim()) return;
     if (hasBadWord(input)) { setWarning(true); return; }
     socket.emit('send_message', {
@@ -197,7 +198,6 @@ function Live({ user, onLoginRequired }) {
         <div style={{ padding:'5px 12px', display:'flex', gap:5, overflowX:'auto', borderTop:'1px solid #1e2d45' }}>
           {['🔥','👏','😱','💪','⚾','🏆','😭'].map(r => (
             <button key={r} onClick={() => {
-              const now = new Date();
               socket.emit('send_message', {
                 message: r,
                 userId: user?.id || null,
