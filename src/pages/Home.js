@@ -323,19 +323,22 @@ function Home({ onGoLive }) {
       const dateStr  = toDateStr(date);
       const listUrl  = `https://www.koreabaseball.com/ws/Main.asmx/GetKboGameList?leId=1&srId=0,1,3,4,5&date=${dateStr}`;
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(listUrl)}`;
-      const res      = await fetch(proxyUrl);
+      // 경기목록 + 스코어보드 병렬 호출
+      const scoreProxy = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.koreabaseball.com/Schedule/ScoreBoard.aspx')}`;
+      const [res, scoreRes] = await Promise.all([
+        fetch(proxyUrl),
+        isSameDay(date, TODAY) ? fetch(scoreProxy) : Promise.resolve(null),
+      ]);
       const json     = await res.json();
       const data     = JSON.parse(json.contents);
 
       if (!data?.game?.length) { setGames([]); setGamesLoading(false); return; }
 
-      // 오늘만 스코어보드 추가 조회
+      // 오늘만 스코어보드 파싱
       let scoreMap = {};
-      if (isSameDay(date, TODAY)) {
+      if (isSameDay(date, TODAY) && scoreRes) {
         try {
-          const sp  = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.koreabaseball.com/Schedule/ScoreBoard.aspx')}`;
-          const sr  = await fetch(sp);
-          const sj  = await sr.json();
+          const sj  = await scoreRes.json();
           const doc = new DOMParser().parseFromString(sj.contents, 'text/html');
           doc.querySelectorAll('.tScore').forEach(table => {
             const rows = table.querySelectorAll('tbody tr');
