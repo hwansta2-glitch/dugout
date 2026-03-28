@@ -438,6 +438,58 @@ function Home({ onGoLive }) {
           winPitcher: g.W_PIT_P_NM, losePitcher: g.L_PIT_P_NM, savePitcher: g.S_PIT_P_NM,
         };
       }));
+      // 날씨 비동기 로드 (경기 카드 표시 후)
+      (async () => {
+        try {
+          const uncached = stadiums.filter(s => !weatherCache[`${s}_${dateStr}`]);
+          if (uncached.length === 0) return;
+          await Promise.all(uncached.map(async s => {
+            const cacheKey = `${s}_${dateStr}`;
+            const coords = Object.entries(STADIUM_COORDS).find(([k]) => s?.includes(k));
+            if (!coords) return;
+            const [, {lat, lon}] = coords;
+            const wUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=7`;
+            const wr = await fetch(wUrl);
+            const wj = await wr.json();
+            const idx = wj.daily?.time?.indexOf(targetDate);
+            if (idx >= 0) {
+              const emoji = getWeatherEmoji(wj.daily.weathercode[idx], wj.daily.precipitation_probability_max[idx]);
+              weatherCache[cacheKey] = emoji;
+            }
+          }));
+          // 날씨 업데이트 후 게임 카드 갱신
+          setGames(prev => prev.map(g => ({
+            ...g,
+            weather: weatherCache[`${g.stadium?.trim()}_${dateStr}`] || ''
+          })));
+        } catch(e) {}
+      })();
+      // 날씨 비동기 로드 (경기 카드 표시 후)
+      (async () => {
+        try {
+          const uncached = stadiums.filter(s => !weatherCache[`${s}_${dateStr}`]);
+          if (uncached.length === 0) return;
+          await Promise.all(uncached.map(async s => {
+            const cacheKey = `${s}_${dateStr}`;
+            const coords = Object.entries(STADIUM_COORDS).find(([k]) => s?.includes(k));
+            if (!coords) return;
+            const [, {lat, lon}] = coords;
+            const wUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=7`;
+            const wr = await fetch(wUrl);
+            const wj = await wr.json();
+            const idx = wj.daily?.time?.indexOf(targetDate);
+            if (idx >= 0) {
+              const emoji = getWeatherEmoji(wj.daily.weathercode[idx], wj.daily.precipitation_probability_max[idx]);
+              weatherCache[cacheKey] = emoji;
+            }
+          }));
+          // 날씨 업데이트 후 게임 카드 갱신
+          setGames(prev => prev.map(g => ({
+            ...g,
+            weather: weatherCache[`${g.stadium?.trim()}_${dateStr}`] || ''
+          })));
+        } catch(e) {}
+      })();
     } catch(e) { console.log('fetchGames error:', e); }
     setGamesLoading(false);
   }
