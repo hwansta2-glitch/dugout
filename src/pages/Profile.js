@@ -1,29 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 
 const TEAMS = [
-  { id:'lg', name:'LG 트윈스', emoji:'🔴', color:'#C00000' },
-  { id:'kia', name:'KIA 타이거즈', emoji:'🐯', color:'#EA0029' },
+  { id:'lg',      name:'LG 트윈스',    emoji:'🔴', color:'#C00000' },
+  { id:'kia',     name:'KIA 타이거즈', emoji:'🐯', color:'#EA0029' },
   { id:'samsung', name:'삼성 라이온즈', emoji:'🦁', color:'#074CA1' },
-  { id:'doosan', name:'두산 베어스', emoji:'🐻', color:'#131230' },
-  { id:'kt', name:'KT 위즈', emoji:'⚡', color:'#444444' },
-  { id:'ssg', name:'SSG 랜더스', emoji:'💎', color:'#CE0E2D' },
-  { id:'lotte', name:'롯데 자이언츠', emoji:'🌊', color:'#002C5F' },
-  { id:'hanwha', name:'한화 이글스', emoji:'🦅', color:'#FC4E00' },
-  { id:'nc', name:'NC 다이노스', emoji:'🦕', color:'#071D4F' },
-  { id:'kiwoom', name:'키움 히어로즈', emoji:'🦸', color:'#820024' },
+  { id:'doosan',  name:'두산 베어스',  emoji:'🐻', color:'#131230' },
+  { id:'kt',      name:'KT 위즈',      emoji:'⚡', color:'#444444' },
+  { id:'ssg',     name:'SSG 랜더스',   emoji:'💎', color:'#CE0E2D' },
+  { id:'lotte',   name:'롯데 자이언츠', emoji:'🌊', color:'#002C5F' },
+  { id:'hanwha',  name:'한화 이글스',  emoji:'🦅', color:'#FC4E00' },
+  { id:'nc',      name:'NC 다이노스',  emoji:'🦕', color:'#071D4F' },
+  { id:'kiwoom',  name:'키움 히어로즈', emoji:'🦸', color:'#820024' },
 ];
 
 const EMOTICONS = [
-  { id:1, emoji:'🔥', name:'화염', cost:0, unlocked:true },
-  { id:2, emoji:'⚾', name:'야구공', cost:0, unlocked:true },
-  { id:3, emoji:'👏', name:'박수', cost:0, unlocked:true },
-  { id:4, emoji:'💪', name:'파이팅', cost:0, unlocked:true },
-  { id:5, emoji:'🏆', name:'우승', cost:100, unlocked:false },
-  { id:6, emoji:'💎', name:'다이아', cost:200, unlocked:false },
-  { id:7, emoji:'🎯', name:'홈런', cost:500, unlocked:false },
-  { id:8, emoji:'👑', name:'왕관', cost:1000, unlocked:false },
-  { id:9, emoji:'🌟', name:'스타', cost:1500, unlocked:false },
-  { id:10, emoji:'🚀', name:'로켓', cost:3000, unlocked:false },
+  { id:1, emoji:'🔥', name:'화염',   cost:0,    unlocked:true },
+  { id:2, emoji:'⚾', name:'야구공', cost:0,    unlocked:true },
+  { id:3, emoji:'👏', name:'박수',   cost:0,    unlocked:true },
+  { id:4, emoji:'💪', name:'파이팅', cost:0,    unlocked:true },
+  { id:5, emoji:'🏆', name:'우승',   cost:100,  unlocked:false },
+  { id:6, emoji:'💎', name:'다이아', cost:200,  unlocked:false },
+  { id:7, emoji:'🎯', name:'홈런',   cost:500,  unlocked:false },
+  { id:8, emoji:'👑', name:'왕관',   cost:1000, unlocked:false },
+  { id:9, emoji:'🌟', name:'스타',   cost:1500, unlocked:false },
+  { id:10,emoji:'🚀', name:'로켓',   cost:3000, unlocked:false },
 ];
 
 function Toggle({ on, onChange }) {
@@ -42,32 +44,107 @@ function Toggle({ on, onChange }) {
   );
 }
 
-function Profile() {
-  const [myTeam, setMyTeam] = useState('lg');
-  const [points, setPoints] = useState(350);
-  const [checked, setChecked] = useState(false);
-  const [emoticons, setEmoticons] = useState(EMOTICONS);
-  const [showTeamModal, setShowTeamModal] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [toast, setToast] = useState('');
-  const [settings, setSettings] = useState({
+function Profile({ user, onLogout }) {
+  const [myTeam, setMyTeam]         = useState('lg');
+  const [points, setPoints]         = useState(0);
+  const [checked, setChecked]       = useState(false);
+  const [emoticons, setEmoticons]   = useState(EMOTICONS);
+  const [showTeamModal, setShowTeamModal]   = useState(false);
+  const [showSettings, setShowSettings]     = useState(false);
+  const [showNickname, setShowNickname]     = useState(false);
+  const [toast, setToast]           = useState('');
+  const [settings, setSettings]     = useState({
     notiGame:true, notiComment:true, notiLike:false,
     notiChat:true, darkMode:true, autoPlay:true,
     profilePublic:true, dataMode:false,
   });
 
+  // 닉네임 변경 상태
+  const [newNickname, setNewNickname]   = useState('');
+  const [nicknameError, setNicknameError] = useState('');
+  const [nicknameLoading, setNicknameLoading] = useState(false);
+  const [currentNickname, setCurrentNickname] = useState('');
+  const [nicknameChangedAt, setNicknameChangedAt] = useState(null);
+
   const team = TEAMS.find(t => t.id === myTeam) || TEAMS[0];
+
+  useEffect(() => {
+    if (user) {
+      setCurrentNickname(user.nickname || user.name || '');
+      setPoints(user.points || 0);
+      if (user.team) {
+        const found = TEAMS.find(t => t.name.includes(user.team) || t.id === user.team.toLowerCase());
+        if (found) setMyTeam(found.id);
+      }
+      // 닉네임 변경일 가져오기
+      if (user.nicknameChangedAt) setNicknameChangedAt(new Date(user.nicknameChangedAt));
+    }
+  }, [user]);
 
   const showToast = (msg) => {
     setToast(msg);
-    setTimeout(() => setToast(''), 2000);
+    setTimeout(() => setToast(''), 2500);
   };
 
-  const checkIn = () => {
-    if (checked) return;
-    setChecked(true);
-    setPoints(p => p + 50);
-    showToast('출석 완료! +50 포인트 ⭐');
+  // 닉네임 변경 가능 여부 확인
+  const getNicknameCooldown = () => {
+    if (!nicknameChangedAt) return null;
+    const diff = Date.now() - nicknameChangedAt.getTime();
+    const days = diff / (1000 * 60 * 60 * 24);
+    if (days < 7) return Math.ceil(7 - days);
+    return null;
+  };
+
+  const submitNickname = async () => {
+    const valid = /^[a-zA-Z0-9가-힣]{2,8}$/.test(newNickname);
+    if (!valid) return setNicknameError('2~8글자 한영숫자만 가능합니다');
+    const cooldown = getNicknameCooldown();
+    if (cooldown) return setNicknameError(`${cooldown}일 후에 변경 가능합니다`);
+
+    setNicknameLoading(true);
+    setNicknameError('');
+    try {
+      const token = localStorage.getItem('dugout_token');
+      const res = await fetch(`${SERVER}/api/users/${user.id}/nickname`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
+        body: JSON.stringify({ nickname: newNickname }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCurrentNickname(newNickname);
+        setNicknameChangedAt(new Date());
+        setShowNickname(false);
+        setNewNickname('');
+        showToast('닉네임이 변경되었어요! ✨');
+      } else {
+        setNicknameError(data.message || '변경 실패');
+      }
+    } catch(e) {
+      setNicknameError('서버 연결 실패');
+    }
+    setNicknameLoading(false);
+  };
+
+  const checkIn = async () => {
+    if (checked || !user) return;
+    try {
+      const token = localStorage.getItem('dugout_token');
+      const res = await fetch(`${SERVER}/api/users/${user.id}/checkin`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setChecked(true);
+        setPoints(data.data.points);
+        showToast('출석 완료! +50 포인트 ⭐');
+      }
+    } catch(e) {
+      setChecked(true);
+      setPoints(p => p + 50);
+      showToast('출석 완료! +50 포인트 ⭐');
+    }
   };
 
   const unlockEmoticon = (id) => {
@@ -79,7 +156,7 @@ function Profile() {
     showToast(`${emo.emoji} 잠금 해제! ✨`);
   };
 
-  // 설정 화면
+  // ── 설정 화면 ──
   if (showSettings) {
     const settingItems = [
       { section:'🔔 알림 설정', items:[
@@ -97,10 +174,8 @@ function Profile() {
         { label:'데이터 절약 모드', key:'dataMode' },
       ]},
     ];
-
     return (
       <div style={{ paddingBottom:80 }}>
-        {/* 헤더 */}
         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 16px 10px', borderBottom:'1px solid #1e2d45' }}>
           <button onClick={() => setShowSettings(false)} style={{ background:'none', border:'none', color:'#3b82f6', fontSize:14, fontWeight:700, cursor:'pointer', padding:0 }}>← 돌아가기</button>
           <span style={{ fontSize:16, fontWeight:900, color:'#e2e8f0' }}>설정</span>
@@ -111,7 +186,7 @@ function Profile() {
               <div style={{ fontSize:11, color:'#64748b', fontWeight:700, letterSpacing:1.5, margin:'16px 0 8px' }}>{section}</div>
               <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:14, overflow:'hidden' }}>
                 {items.map(({ label, desc, key }, i) => (
-                  <div key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom: i < items.length-1 ? '1px solid #1e2d45' : 'none' }}>
+                  <div key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom: i<items.length-1?'1px solid #1e2d45':'none' }}>
                     <div>
                       <div style={{ fontSize:14, color:'#e2e8f0' }}>{label}</div>
                       {desc && <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{desc}</div>}
@@ -122,18 +197,16 @@ function Profile() {
               </div>
             </div>
           ))}
-          {/* 계정 관리 */}
           <div style={{ fontSize:11, color:'#64748b', fontWeight:700, letterSpacing:1.5, margin:'16px 0 8px' }}>⚠️ 계정 관리</div>
           <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:14, overflow:'hidden' }}>
-            {[
-              { label:'로그아웃', color:'#ef4444' },
-              { label:'계정 탈퇴', color:'#ef4444' },
-            ].map(({ label, color }, i) => (
-              <div key={label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom: i===0 ? '1px solid #1e2d45' : 'none' }}>
-                <span style={{ fontSize:14, color }}>{label}</span>
-                <button onClick={() => showToast('고객센터를 통해 진행해주세요')} style={{ background:'#ef444422', border:'1px solid #ef444444', borderRadius:8, padding:'5px 12px', color:'#ef4444', fontSize:12, fontWeight:700, cursor:'pointer' }}>선택</button>
-              </div>
-            ))}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid #1e2d45' }}>
+              <span style={{ fontSize:14, color:'#ef4444' }}>로그아웃</span>
+              <button onClick={onLogout} style={{ background:'#ef444422', border:'1px solid #ef444444', borderRadius:8, padding:'5px 12px', color:'#ef4444', fontSize:12, fontWeight:700, cursor:'pointer' }}>로그아웃</button>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px' }}>
+              <span style={{ fontSize:14, color:'#ef4444' }}>계정 탈퇴</span>
+              <button onClick={() => showToast('고객센터를 통해 진행해주세요')} style={{ background:'#ef444422', border:'1px solid #ef444444', borderRadius:8, padding:'5px 12px', color:'#ef4444', fontSize:12, fontWeight:700, cursor:'pointer' }}>선택</button>
+            </div>
           </div>
           <div style={{ fontSize:11, color:'#64748b', textAlign:'center', marginTop:16 }}>버전 v1.0.0</div>
         </div>
@@ -141,16 +214,58 @@ function Profile() {
     );
   }
 
+  const cooldown = getNicknameCooldown();
+
   return (
     <div style={{ padding:'14px 16px 80px', position:'relative' }}>
 
       {/* 토스트 */}
       {toast && (
-        <div style={{
-          position:'fixed', top:80, left:'50%', transform:'translateX(-50%)',
-          background:'#10b981', color:'#fff', padding:'7px 18px',
-          borderRadius:20, fontSize:12, fontWeight:700, zIndex:999, whiteSpace:'nowrap',
-        }}>{toast}</div>
+        <div style={{ position:'fixed', top:80, left:'50%', transform:'translateX(-50%)', background:'#10b981', color:'#fff', padding:'7px 18px', borderRadius:20, fontSize:12, fontWeight:700, zIndex:999, whiteSpace:'nowrap' }}>
+          {toast}
+        </div>
+      )}
+
+      {/* 닉네임 변경 모달 */}
+      {showNickname && (
+        <div style={{ position:'fixed', inset:0, background:'#000000cc', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ width:'90%', maxWidth:340, background:'#0f172a', borderRadius:16, padding:'24px 20px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <span style={{ fontSize:15, fontWeight:700, color:'#e2e8f0' }}>✏️ 닉네임 변경</span>
+              <button onClick={() => { setShowNickname(false); setNicknameError(''); setNewNickname(''); }} style={{ background:'transparent', border:'none', color:'#64748b', fontSize:20, cursor:'pointer' }}>✕</button>
+            </div>
+
+            <div style={{ fontSize:12, color:'#64748b', marginBottom:4 }}>현재 닉네임</div>
+            <div style={{ fontSize:14, fontWeight:700, color:'#e2e8f0', marginBottom:14, padding:'8px 12px', background:'#111827', borderRadius:8 }}>
+              {currentNickname}
+            </div>
+
+            {cooldown ? (
+              <div style={{ textAlign:'center', padding:'16px 0', color:'#f59e0b', fontSize:13 }}>
+                ⏳ 닉네임 변경은 <strong>{cooldown}일 후</strong>에 가능합니다
+              </div>
+            ) : (
+              <>
+                <input
+                  value={newNickname}
+                  onChange={e => { setNewNickname(e.target.value); setNicknameError(''); }}
+                  placeholder="새 닉네임 (2~8글자 한영숫자)"
+                  maxLength={8}
+                  style={{ width:'100%', padding:'10px 12px', borderRadius:8, background:'#111827', border:`1px solid ${nicknameError?'#ef4444':'#1e2d45'}`, color:'#e2e8f0', fontSize:13, boxSizing:'border-box', outline:'none', marginBottom:8 }}
+                />
+                {nicknameError && <div style={{ fontSize:12, color:'#ef4444', marginBottom:8 }}>⚠️ {nicknameError}</div>}
+                <div style={{ fontSize:11, color:'#64748b', marginBottom:14 }}>
+                  변경 후 7일간 재변경 불가
+                </div>
+                <button
+                  onClick={submitNickname}
+                  disabled={nicknameLoading || !newNickname.trim()}
+                  style={{ width:'100%', padding:'11px', borderRadius:10, background: newNickname.trim() ? '#3b82f6' : '#1e2d45', border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor: newNickname.trim() ? 'pointer' : 'default' }}
+                >{nicknameLoading ? '변경 중...' : '닉네임 변경'}</button>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* 구단 변경 모달 */}
@@ -182,8 +297,19 @@ function Profile() {
       {/* 프로필 카드 */}
       <div style={{ background:'#0d1220', border:'1px solid #1e2d45', borderRadius:14, padding:18, marginBottom:14, textAlign:'center' }}>
         <div style={{ fontSize:44, marginBottom:10 }}>😎</div>
-        <div style={{ fontSize:17, fontWeight:900, color:'#e2e8f0' }}>오용환</div>
+        <div style={{ fontSize:17, fontWeight:900, color:'#e2e8f0' }}>{currentNickname || '닉네임 없음'}</div>
+        {user?.email && <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{user.email}</div>}
         <div style={{ fontSize:12, color:'#64748b', marginTop:3 }}>{team.emoji} {team.name} 팬</div>
+
+        {/* 닉네임 변경 버튼 */}
+        <button onClick={() => setShowNickname(true)} style={{
+          marginTop:10, padding:'5px 14px', borderRadius:20,
+          border:'1px solid #243550', background:'#111827',
+          color:'#94a3b8', fontSize:11, fontWeight:700, cursor:'pointer',
+        }}>
+          ✏️ 닉네임 변경 {cooldown ? `(${cooldown}일 후 가능)` : ''}
+        </button>
+
         <div style={{ display:'flex', justifyContent:'space-around', marginTop:14, paddingTop:12, borderTop:'1px solid #1e2d45' }}>
           {[['127','참여 경기'],['3.2k','댓글'],['14일','출석']].map(([v,k]) => (
             <div key={k}>
@@ -212,10 +338,10 @@ function Profile() {
           </div>
           <button onClick={checkIn} style={{
             padding:'10px 16px', borderRadius:10,
-            border:`1px solid ${checked ? '#1e2d45' : '#10b98166'}`,
-            background: checked ? '#0d1220' : '#10b98122',
-            color: checked ? '#64748b' : '#10b981',
-            fontSize:12, fontWeight:700, cursor: checked ? 'default' : 'pointer',
+            border:`1px solid ${checked?'#1e2d45':'#10b98166'}`,
+            background: checked?'#0d1220':'#10b98122',
+            color: checked?'#64748b':'#10b981',
+            fontSize:12, fontWeight:700, cursor: checked?'default':'pointer',
           }}>{checked ? '✓ 출석완료' : '☀️ 출석체크'}</button>
         </div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -239,15 +365,15 @@ function Profile() {
             <div key={e.id} onClick={() => !e.unlocked && unlockEmoticon(e.id)} style={{
               display:'flex', flexDirection:'column', alignItems:'center', gap:4,
               padding:'10px 6px', borderRadius:10,
-              border:`1px solid ${e.unlocked ? '#10b98155' : '#1e2d45'}`,
-              background: e.unlocked ? '#10b98111' : '#0d1220',
-              cursor: e.unlocked ? 'default' : 'pointer', position:'relative',
+              border:`1px solid ${e.unlocked?'#10b98155':'#1e2d45'}`,
+              background: e.unlocked?'#10b98111':'#0d1220',
+              cursor: e.unlocked?'default':'pointer', position:'relative',
             }}>
-              <div style={{ fontSize:22, filter: e.unlocked ? 'none' : 'grayscale(1)', opacity: e.unlocked ? 1 : 0.4 }}>{e.emoji}</div>
-              <div style={{ fontSize:9, color: e.unlocked ? '#10b981' : '#64748b', textAlign:'center' }}>{e.name}</div>
+              <div style={{ fontSize:22, filter:e.unlocked?'none':'grayscale(1)', opacity:e.unlocked?1:0.4 }}>{e.emoji}</div>
+              <div style={{ fontSize:9, color:e.unlocked?'#10b981':'#64748b', textAlign:'center' }}>{e.name}</div>
               {e.unlocked
                 ? <div style={{ position:'absolute', top:4, right:5, fontSize:9, color:'#10b981', fontWeight:900 }}>✓</div>
-                : <div style={{ fontSize:9, fontWeight:700, color: points >= e.cost ? '#e2e8f0' : '#64748b' }}>⭐{e.cost}</div>
+                : <div style={{ fontSize:9, fontWeight:700, color:points>=e.cost?'#e2e8f0':'#64748b' }}>⭐{e.cost}</div>
               }
             </div>
           ))}
@@ -267,7 +393,6 @@ function Profile() {
         </div>
         <span style={{ color:'#64748b' }}>›</span>
       </button>
-
     </div>
   );
 }
