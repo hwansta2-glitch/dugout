@@ -90,14 +90,38 @@ function Home({ onGoLive }) {
   const [loading, setLoading] = useState(true);
 
   const fetchGames = async () => {
-    try {
-      const res  = await fetch(`${SERVER}/api/kbo/games`);
-      const data = await res.json();
-      if (data.success && data.data && data.data.length > 0) {
-        setGames(data.data);
-      }
-    } catch(e) {}
-  };
+  try {
+    // allorigins 프록시로 KBO 스코어보드 직접 파싱
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+
+    const targetUrl = `https://www.koreabaseball.com/ws/Schedule.asmx/GetScheduleScore?leId=1&srId=0,1,3,4,5&date=${yyyy}${mm}${dd}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+    const res = await fetch(proxyUrl);
+    const json = await res.json();
+    const data = JSON.parse(json.contents);
+
+    if (data && data.game && data.game.length > 0) {
+      const mapped = data.game.map((g, i) => ({
+        id: i + 1,
+        away: g.T_NAME_A || g.awayNm,
+        home: g.T_NAME_H || g.homeNm,
+        awayScore: g.SCORE_A != null && g.SCORE_A !== '' ? parseInt(g.SCORE_A) : null,
+        homeScore: g.SCORE_H != null && g.SCORE_H !== '' ? parseInt(g.SCORE_H) : null,
+        state: g.G_SC_NM || g.statusNm || '예정',
+        inning: g.INN_NO ? `${g.INN_NO}회` : '',
+        startTime: g.G_TIME || '',
+        stadium: g.S_NM || '',
+      }));
+      setGames(mapped);
+    }
+  } catch(e) {
+    console.log('경기 데이터 불러오기 실패:', e);
+  }
+};
 
   const fetchHotPosts = async () => {
     try {
