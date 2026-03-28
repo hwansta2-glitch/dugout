@@ -380,64 +380,15 @@ function Home({ onGoLive }) {
         }
       }
 
-      const listUrl  = `https://www.koreabaseball.com/ws/Main.asmx/GetKboGameList?leId=1&srId=0,1,3,4,5&date=${dateStr}`;
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(listUrl)}`;
-      // 경기목록 + 스코어보드 병렬 호출
-      const scoreProxy = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.koreabaseball.com/Schedule/ScoreBoard.aspx')}`;
-      const [res, scoreRes] = await Promise.all([
-        fetch(proxyUrl),
-        isSameDay(date, TODAY) ? fetch(scoreProxy) : Promise.resolve(null),
-      ]);
-      const json     = await res.json();
-      const data     = JSON.parse(json.contents);
+      // Railway 백엔드 API 호출 (캐싱 적용, allorigins 대체)
+      const apiRes = await fetch(`${SERVER}/api/kbo/games/${dateStr}`);
+      const apiData = await apiRes.json();
 
-      if (!data?.game?.length) { setGames([]); setGamesLoading(false); return; }
-
-      const isPast = isPastDate;
-
-      // 오늘만 스코어보드 파싱
-      let scoreMap = {};
-      if (isSameDay(date, TODAY) && scoreRes) {
-        try {
-          const sj  = await scoreRes.json();
-          const doc = new DOMParser().parseFromString(sj.contents, 'text/html');
-          doc.querySelectorAll('.tScore').forEach(table => {
-            const rows = table.querySelectorAll('tbody tr');
-            if (rows.length < 2) return;
-            const away = rows[0].querySelector('th')?.textContent.trim();
-            const home = rows[1].querySelector('th')?.textContent.trim();
-            const as   = rows[0].querySelector('.point')?.textContent.trim();
-            const hs   = rows[1].querySelector('.point')?.textContent.trim();
-            const aTds = Array.from(rows[0].querySelectorAll('td:not(.point):not(.hit)'));
-            const hTds = Array.from(rows[1].querySelectorAll('td:not(.point):not(.hit)'));
-            const innings = aTds.slice(0,12).map((td,i) => ({
-              away: td.textContent.trim()==='-' ? null : parseInt(td.textContent.trim()),
-              home: hTds[i]?.textContent.trim()==='-' ? null : parseInt(hTds[i]?.textContent.trim()),
-            })).filter(x => x.away!==null || x.home!==null);
-            scoreMap[`${away}-${home}`] = {
-              awayScore: as&&as!=='-' ? parseInt(as) : null,
-              homeScore: hs&&hs!=='-' ? parseInt(hs) : null,
-              innings,
-            };
-          });
-        } catch(e) {}
+      if (!apiData.success || !apiData.data.length) {
+        setGames([]); setGamesLoading(false); return;
       }
 
-      setGames(data.game.map((g,i) => {
-        const key    = `${g.AWAY_NM?.trim()}-${g.HOME_NM?.trim()}`;
-        const scores = scoreMap[key] || {};
-        return {
-          id: i+1, gameId: g.G_ID,
-          awayTeam: g.AWAY_NM?.trim(), homeTeam: g.HOME_NM?.trim(),
-          awayScore: scores.awayScore ?? null,
-          homeScore: scores.homeScore ?? null,
-          innings: scores.innings || [],
-          state: scores.awayScore != null ? '종료' : isPast ? '종료' : '예정',
-          startTime: g.G_TM, stadium: g.S_NM, dateStr: dateStr,
-          awayPitcher: g.T_PIT_P_NM, homePitcher: g.B_PIT_P_NM,
-          winPitcher: g.W_PIT_P_NM, losePitcher: g.L_PIT_P_NM, savePitcher: g.S_PIT_P_NM,
-        };
-      }));
+      setGames(apiData.data);
       // 날씨 비동기 로드 (경기 카드 표시 후)
       (async () => {
         try {
