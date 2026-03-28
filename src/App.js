@@ -10,17 +10,10 @@ function useAuth() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('dugout_token');
-    if (token) {
-      fetch(SERVER + '/auth/me', {
-        headers: { Authorization: 'Bearer ' + token }
-      })
-      .then(res => res.json())
-      .then(data => { if (data.success) setUser(data.data); })
-      .catch(() => localStorage.removeItem('dugout_token'));
-    }
+    // ✅ 1단계: URL에 token이 있으면 무조건 먼저 저장 (로그인 직후)
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
+
     if (urlToken) {
       localStorage.setItem('dugout_token', urlToken);
       window.history.replaceState({}, '', '/');
@@ -28,7 +21,27 @@ function useAuth() {
         headers: { Authorization: 'Bearer ' + urlToken }
       })
       .then(res => res.json())
-      .then(data => { if (data.success) setUser(data.data); });
+      .then(data => {
+        if (data.success) setUser(data.data);
+      });
+      return; // 아래 코드 실행 안 함
+    }
+
+    // ✅ 2단계: URL token 없으면 localStorage에서 기존 토큰 확인
+    const token = localStorage.getItem('dugout_token');
+    if (token) {
+      fetch(SERVER + '/auth/me', {
+        headers: { Authorization: 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setUser(data.data);
+        } else {
+          localStorage.removeItem('dugout_token'); // 만료된 토큰 삭제
+        }
+      })
+      .catch(() => localStorage.removeItem('dugout_token'));
     }
   }, []);
 
@@ -49,6 +62,7 @@ function App() {
       maxWidth: 430, margin: '0 auto',
       display: 'flex', flexDirection: 'column',
     }}>
+      {/* 상단 헤더 */}
       <div style={{
         padding: '12px 16px', borderBottom: '1px solid #1e2d45',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -75,6 +89,7 @@ function App() {
         )}
       </div>
 
+      {/* 메인 콘텐츠 */}
       <div style={{ flex:1, overflowY:'auto' }}>
         {tab==='home' && <Home onGoLive={() => setTab('live')} />}
         {tab==='live' && <Live user={user} />}
@@ -82,6 +97,7 @@ function App() {
         {tab==='profile' && <Profile user={user} onLogout={logout} />}
       </div>
 
+      {/* 하단 탭바 */}
       <div style={{
         display:'flex', borderTop:'1px solid #1e2d45',
         backgroundColor:'#0d1220', position:'sticky', bottom:0,
