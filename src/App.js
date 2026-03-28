@@ -6,7 +6,6 @@ import Profile from './pages/Profile';
 
 const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
 
-// 닉네임 설정 모달
 function NicknameModal({ user, onComplete }) {
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
@@ -45,7 +44,6 @@ function NicknameModal({ user, onComplete }) {
           <div style={{ fontSize:17, fontWeight:900, color:'#e2e8f0' }}>Dugout에 오신 걸 환영해요!</div>
           <div style={{ fontSize:12, color:'#64748b', marginTop:6 }}>사용할 닉네임을 설정해주세요</div>
         </div>
-
         <input
           value={nickname}
           onChange={e => { setNickname(e.target.value); setError(''); }}
@@ -61,7 +59,6 @@ function NicknameModal({ user, onComplete }) {
           {nickname ? (valid ? '✅ 사용 가능한 닉네임이에요' : '❌ 2~8글자 한영숫자만 가능합니다') : '닉네임은 이후 7일마다 변경 가능해요'}
         </div>
         {error && <div style={{ fontSize:12, color:'#ef4444', marginBottom:12 }}>⚠️ {error}</div>}
-
         <button
           onClick={submit}
           disabled={!valid || loading}
@@ -100,23 +97,23 @@ function useAuth() {
     }
 
     const token = localStorage.getItem('dugout_token');
-    if (token) {
-      fetch(SERVER + '/auth/me', { headers: { Authorization: 'Bearer ' + token } })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setUser(data.data);
-            if (!data.data.nickname) setNeedNickname(true);
-          } else {
-            localStorage.removeItem('dugout_token');
-          }
-        })
-        .catch(() => localStorage.removeItem('dugout_token'));
-    }
+    if (!token) return; // ✅ 토큰 없으면 아무것도 안 함
+
+    fetch(SERVER + '/auth/me', { headers: { Authorization: 'Bearer ' + token } })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setUser(data.data);
+          if (!data.data.nickname) setNeedNickname(true);
+        } else {
+          localStorage.removeItem('dugout_token');
+        }
+      })
+      .catch(() => localStorage.removeItem('dugout_token'));
   }, []);
 
-  const login = () => { window.location.href = SERVER + '/auth/google'; };
-  const logout = () => { localStorage.removeItem('dugout_token'); setUser(null); setNeedNickname(false); };
+  const login    = () => { window.location.href = SERVER + '/auth/google'; };
+  const logout   = () => { localStorage.removeItem('dugout_token'); setUser(null); setNeedNickname(false); };
   const completeNickname = (nickname) => {
     setUser(prev => ({ ...prev, nickname }));
     setNeedNickname(false);
@@ -136,7 +133,7 @@ function App() {
       maxWidth: 430, margin: '0 auto',
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* 닉네임 설정 모달 */}
+      {/* 닉네임 설정 모달: 로그인된 유저만 */}
       {needNickname && user && (
         <NicknameModal user={user} onComplete={completeNickname} />
       )}
