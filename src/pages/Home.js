@@ -354,6 +354,32 @@ function Home({ onGoLive }) {
     setGamesLoading(true);
     try {
       const dateStr  = toDateStr(date);
+      const now2 = new Date();
+      const gDate = new Date(parseInt(dateStr.slice(0,4)), parseInt(dateStr.slice(4,6))-1, parseInt(dateStr.slice(6,8)));
+      const isPastDate = gDate < new Date(now2.getFullYear(), now2.getMonth(), now2.getDate());
+
+      // 지난 날짜면 DB에서 먼저 조회
+      if (isPastDate) {
+        const dbRes = await fetch(`${SERVER}/api/kbo/results/${dateStr}`);
+        const dbData = await dbRes.json();
+        if (dbData.success && dbData.data.length > 0) {
+          setGames(dbData.data.map((g,i) => ({
+            id: i+1, gameId: g.gameId,
+            awayTeam: g.awayTeam, homeTeam: g.homeTeam,
+            awayScore: g.awayScore, homeScore: g.homeScore,
+            innings: g.innings || [],
+            state: '종료',
+            startTime: g.startTime, stadium: g.stadium,
+            dateStr: g.gameDate,
+            weather: '',
+            awayPitcher: g.awayPitcher, homePitcher: g.homePitcher,
+            winPitcher: g.winPitcher, losePitcher: g.losePitcher, savePitcher: g.savePitcher,
+          })));
+          setGamesLoading(false);
+          return;
+        }
+      }
+
       const listUrl  = `https://www.koreabaseball.com/ws/Main.asmx/GetKboGameList?leId=1&srId=0,1,3,4,5&date=${dateStr}`;
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(listUrl)}`;
       // 경기목록 + 스코어보드 병렬 호출
