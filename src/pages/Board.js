@@ -20,16 +20,16 @@ const PHOTO_TAGS = ['선수', '직관인증'];
 const TRADE_TAGS = ['삽니다', '팝니다', '나눔'];
 
 // ── 게시글 카드 ──────────────────────────────────────
-function PostCard({ post, type, onLike, onDislike, liked, disliked, reported, onReport, onClick }) {
+function PostCard({ post, type, onLike, onDislike, liked, disliked, reported, onReport, onClick, onDelete, isMyPost }) {
   if (reported) return (
     <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:12, padding:'12px 14px', marginBottom:8, color:'#64748b', fontSize:13 }}>
       🚨 신고된 게시글입니다
     </div>
   );
   return (
-    <div onClick={onClick} style={{ background:'#111827', border:`1px solid ${(post.likes??0)>=10 ? '#243550' : '#1e2d45'}`, borderRadius:12, padding:'12px 14px', marginBottom:8, cursor:'pointer' }}>
+    <div onClick={onClick} style={{ background:'#111827', border:`1px solid ${(post.likes??0)>=10?'#243550':'#1e2d45'}`, borderRadius:12, padding:'12px 14px', marginBottom:8, cursor:'pointer' }}>
       <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:7 }}>
-        {(post.likes??0) >= 10 && <span style={{ fontSize:10, color:'#ef4444', border:'1px solid #ef444444', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>🔥 HOT</span>}
+        {(post.likes??0)>=10 && <span style={{ fontSize:10, color:'#ef4444', border:'1px solid #ef444444', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>🔥 HOT</span>}
         {post.team && <span style={{ fontSize:10, color:'#94a3b8', border:'1px solid #1e2d45', borderRadius:4, padding:'2px 7px' }}>{post.team}</span>}
         {post.tag  && <span style={{ fontSize:10, color:'#3b82f6', border:'1px solid #3b82f644', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>{post.tag}</span>}
         <span style={{ fontSize:10, color:'#64748b', marginLeft:'auto' }}>
@@ -44,17 +44,16 @@ function PostCard({ post, type, onLike, onDislike, liked, disliked, reported, on
           <span style={{ fontSize:11, color:'#64748b' }}>👁 {post.views ?? 0}</span>
         </div>
         <div style={{ display:'flex', gap:5, alignItems:'center' }}>
+          {isMyPost && (
+            <button onClick={e => { e.stopPropagation(); onDelete(); }} style={{ fontSize:11, color:'#ef4444', background:'transparent', border:'none', cursor:'pointer' }}>삭제</button>
+          )}
           <button onClick={e => { e.stopPropagation(); onReport(); }} style={{ fontSize:11, color:'#64748b', background:'transparent', border:'none', cursor:'pointer' }}>신고</button>
-          <button onClick={e => { e.stopPropagation(); onDislike(); }} style={{
-            padding:'3px 8px', borderRadius:12, border:`1px solid ${disliked?'#6366f155':'#1e2d45'}`,
-            background: disliked?'#6366f122':'transparent', fontSize:11,
-            color: disliked?'#6366f1':'#64748b', fontWeight:700, cursor:'pointer',
-          }}>👎 {(post.dislikes??0)+(disliked?1:0)}</button>
-          <button onClick={e => { e.stopPropagation(); onLike(); }} style={{
-            padding:'3px 8px', borderRadius:12, border:`1px solid ${liked?'#ef444455':'#1e2d45'}`,
-            background: liked?'#ef444422':'transparent', fontSize:11,
-            color: liked?'#ef4444':'#64748b', fontWeight:700, cursor:'pointer',
-          }}>👍 {(post.likes??0)+(liked?1:0)}</button>
+          <button onClick={e => { e.stopPropagation(); onDislike(); }} style={{ padding:'3px 8px', borderRadius:12, border:`1px solid ${disliked?'#6366f155':'#1e2d45'}`, background:disliked?'#6366f122':'transparent', fontSize:11, color:disliked?'#6366f1':'#64748b', fontWeight:700, cursor:'pointer' }}>
+            👎 {(post.dislikes??0)+(disliked?1:0)}
+          </button>
+          <button onClick={e => { e.stopPropagation(); onLike(); }} style={{ padding:'3px 8px', borderRadius:12, border:`1px solid ${liked?'#ef444455':'#1e2d45'}`, background:liked?'#ef444422':'transparent', fontSize:11, color:liked?'#ef4444':'#64748b', fontWeight:700, cursor:'pointer' }}>
+            👍 {(post.likes??0)+(liked?1:0)}
+          </button>
         </div>
       </div>
     </div>
@@ -75,51 +74,40 @@ function NewsCard({ item }) {
 }
 
 // ── 댓글 컴포넌트 ────────────────────────────────────
-function CommentItem({ comment, onLike, onDislike, liked, disliked }) {
+function CommentItem({ comment, onLike, onDislike, liked, disliked, onDelete, isMyComment }) {
   const isBest = (comment.likes ?? 0) >= 10;
   return (
-    <div style={{
-      marginBottom:10, padding:'10px 12px', borderRadius:10,
-      background: isBest ? '#0f2a1a' : '#111827',
-      border: `1px solid ${isBest ? '#10b98155' : '#1e2d45'}`,
-    }}>
-      {isBest && (
-        <div style={{ fontSize:10, color:'#10b981', fontWeight:700, marginBottom:6 }}>
-          🏆 베스트 댓글
-        </div>
-      )}
+    <div style={{ marginBottom:10, padding:'10px 12px', borderRadius:10, background:isBest?'#0f2a1a':'#111827', border:`1px solid ${isBest?'#10b98155':'#1e2d45'}` }}>
+      {isBest && <div style={{ fontSize:10, color:'#10b981', fontWeight:700, marginBottom:6 }}>🏆 베스트 댓글</div>}
       <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
         <div style={{ width:22, height:22, borderRadius:'50%', background:'#1e2d45', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11 }}>⚾</div>
         <span style={{ fontSize:12, fontWeight:700, color:'#e2e8f0' }}>{comment.author?.nickname || comment.author?.name}</span>
         <span style={{ fontSize:10, color:'#64748b' }}>
           {new Date(comment.createdAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })}
         </span>
+        {isMyComment && (
+          <button onClick={onDelete} style={{ marginLeft:'auto', fontSize:11, color:'#ef4444', background:'transparent', border:'none', cursor:'pointer' }}>삭제</button>
+        )}
       </div>
       <div style={{ fontSize:13, color:'#cbd5e1', paddingLeft:28, lineHeight:1.5, marginBottom:8 }}>{comment.content}</div>
       <div style={{ paddingLeft:28, display:'flex', gap:6 }}>
-        <button onClick={onLike} style={{
-          padding:'2px 10px', borderRadius:10, fontSize:11, cursor:'pointer',
-          border:`1px solid ${liked?'#ef444455':'#1e2d45'}`,
-          background: liked?'#ef444422':'transparent',
-          color: liked?'#ef4444':'#64748b', fontWeight:700,
-        }}>👍 {(comment.likes??0)+(liked?1:0)}</button>
-        <button onClick={onDislike} style={{
-          padding:'2px 10px', borderRadius:10, fontSize:11, cursor:'pointer',
-          border:`1px solid ${disliked?'#6366f155':'#1e2d45'}`,
-          background: disliked?'#6366f122':'transparent',
-          color: disliked?'#6366f1':'#64748b', fontWeight:700,
-        }}>👎 {(comment.dislikes??0)+(disliked?1:0)}</button>
+        <button onClick={onLike} style={{ padding:'2px 10px', borderRadius:10, fontSize:11, cursor:'pointer', border:`1px solid ${liked?'#ef444455':'#1e2d45'}`, background:liked?'#ef444422':'transparent', color:liked?'#ef4444':'#64748b', fontWeight:700 }}>
+          👍 {(comment.likes??0)+(liked?1:0)}
+        </button>
+        <button onClick={onDislike} style={{ padding:'2px 10px', borderRadius:10, fontSize:11, cursor:'pointer', border:`1px solid ${disliked?'#6366f155':'#1e2d45'}`, background:disliked?'#6366f122':'transparent', color:disliked?'#6366f1':'#64748b', fontWeight:700 }}>
+          👎 {(comment.dislikes??0)+(disliked?1:0)}
+        </button>
       </div>
     </div>
   );
 }
 
 // ── 게시글 상세 + 댓글 ──────────────────────────────
-function PostDetail({ post, user, onClose }) {
-  const [comments, setComments]     = useState([]);
-  const [input, setInput]           = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [commentLikes, setCommentLikes]     = useState({});
+function PostDetail({ post, user, onClose, onDeleted }) {
+  const [comments, setComments]         = useState([]);
+  const [input, setInput]               = useState('');
+  const [submitting, setSubmitting]     = useState(false);
+  const [commentLikes, setCommentLikes]       = useState({});
   const [commentDislikes, setCommentDislikes] = useState({});
 
   useEffect(() => {
@@ -145,19 +133,32 @@ function PostDetail({ post, user, onClose }) {
     setSubmitting(false);
   };
 
-  const handleCommentLike = async (commentId) => {
-    if (commentLikes[commentId]) return;
-    setCommentLikes(p => ({ ...p, [commentId]: true }));
-    await fetch(`${SERVER}/api/comments/${commentId}/like`, { method:'POST' });
+  const deleteComment = async (commentId) => {
+    if (!window.confirm('댓글을 삭제할까요?')) return;
+    const token = localStorage.getItem('dugout_token');
+    try {
+      const res = await fetch(`${SERVER}/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization':'Bearer ' + token },
+      });
+      const data = await res.json();
+      if (data.success) setComments(prev => prev.filter(c => c.id !== commentId));
+      else alert(data.message);
+    } catch(e) { alert('삭제 실패'); }
   };
 
-  const handleCommentDislike = async (commentId) => {
-    if (commentDislikes[commentId]) return;
-    setCommentDislikes(p => ({ ...p, [commentId]: true }));
-    await fetch(`${SERVER}/api/comments/${commentId}/dislike`, { method:'POST' });
+  const handleCommentLike = async (id) => {
+    if (commentLikes[id]) return;
+    setCommentLikes(p => ({ ...p, [id]: true }));
+    await fetch(`${SERVER}/api/comments/${id}/like`, { method:'POST' });
   };
 
-  // 베스트 댓글(추천 10개 이상) 상단 고정
+  const handleCommentDislike = async (id) => {
+    if (commentDislikes[id]) return;
+    setCommentDislikes(p => ({ ...p, [id]: true }));
+    await fetch(`${SERVER}/api/comments/${id}/dislike`, { method:'POST' });
+  };
+
   const bestComments   = comments.filter(c => (c.likes??0) >= 10).sort((a,b) => b.likes - a.likes);
   const normalComments = comments.filter(c => (c.likes??0) < 10);
 
@@ -167,19 +168,30 @@ function PostDetail({ post, user, onClose }) {
       <div style={{ position:'sticky', top:0, background:'#080c14', borderBottom:'1px solid #1e2d45', padding:'12px 16px', display:'flex', alignItems:'center', gap:10, zIndex:10 }}>
         <button onClick={onClose} style={{ background:'transparent', border:'none', color:'#94a3b8', fontSize:20, cursor:'pointer' }}>←</button>
         <span style={{ fontSize:14, fontWeight:700, color:'#e2e8f0' }}>게시글</span>
+        {/* 본인 게시글 삭제 버튼 */}
+        {user && post.authorId === user.id && (
+          <button onClick={async () => {
+            if (!window.confirm('게시글을 삭제할까요?')) return;
+            const token = localStorage.getItem('dugout_token');
+            const res = await fetch(`${SERVER}/api/posts/${post.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization':'Bearer ' + token },
+            });
+            const data = await res.json();
+            if (data.success) { onDeleted(); onClose(); }
+            else alert(data.message);
+          }} style={{ marginLeft:'auto', fontSize:12, color:'#ef4444', background:'#ef444422', border:'1px solid #ef444444', borderRadius:8, padding:'4px 12px', cursor:'pointer', fontWeight:700 }}>
+            🗑 삭제
+          </button>
+        )}
       </div>
 
       <div style={{ padding:'16px' }}>
-        {/* 말머리/팀 */}
         <div style={{ display:'flex', gap:6, marginBottom:10 }}>
           {post.team && <span style={{ fontSize:10, color:'#94a3b8', border:'1px solid #1e2d45', borderRadius:4, padding:'2px 7px' }}>{post.team}</span>}
           {post.tag  && <span style={{ fontSize:10, color:'#3b82f6', border:'1px solid #3b82f644', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>{post.tag}</span>}
         </div>
-
-        {/* 제목 */}
         <div style={{ fontSize:17, fontWeight:800, color:'#e2e8f0', lineHeight:1.4, marginBottom:10 }}>{post.title}</div>
-
-        {/* 작성자 */}
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, paddingBottom:14, borderBottom:'1px solid #1e2d45' }}>
           <div style={{ width:28, height:28, borderRadius:'50%', background:'#1e2d45', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13 }}>⚾</div>
           <div>
@@ -192,41 +204,35 @@ function PostDetail({ post, user, onClose }) {
             <span style={{ fontSize:11, color:'#64748b' }}>👁 {post.views??0}</span>
           </div>
         </div>
-
-        {/* 본문 */}
         <div style={{ fontSize:14, color:'#cbd5e1', lineHeight:1.8, marginBottom:24, minHeight:60, whiteSpace:'pre-wrap' }}>
           {post.content || '내용이 없습니다.'}
         </div>
 
         {/* 댓글 */}
         <div style={{ borderTop:'1px solid #1e2d45', paddingTop:16 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:'#94a3b8', marginBottom:12 }}>
-            💬 댓글 {comments.length}개
-          </div>
-
-          {/* 베스트 댓글 */}
+          <div style={{ fontSize:13, fontWeight:700, color:'#94a3b8', marginBottom:12 }}>💬 댓글 {comments.length}개</div>
           {bestComments.length > 0 && (
             <div style={{ marginBottom:12 }}>
               {bestComments.map(c => (
                 <CommentItem key={c.id} comment={c}
                   liked={commentLikes[c.id]} disliked={commentDislikes[c.id]}
-                  onLike={() => handleCommentLike(c.id)}
-                  onDislike={() => handleCommentDislike(c.id)}
+                  onLike={() => handleCommentLike(c.id)} onDislike={() => handleCommentDislike(c.id)}
+                  isMyComment={user && c.authorId === user.id}
+                  onDelete={() => deleteComment(c.id)}
                 />
               ))}
               <div style={{ height:1, background:'#1e2d45', margin:'12px 0' }} />
             </div>
           )}
-
-          {/* 일반 댓글 */}
           {comments.length === 0 && (
             <div style={{ textAlign:'center', padding:'20px 0', color:'#64748b', fontSize:13 }}>첫 댓글을 작성해보세요!</div>
           )}
           {normalComments.map(c => (
             <CommentItem key={c.id} comment={c}
               liked={commentLikes[c.id]} disliked={commentDislikes[c.id]}
-              onLike={() => handleCommentLike(c.id)}
-              onDislike={() => handleCommentDislike(c.id)}
+              onLike={() => handleCommentLike(c.id)} onDislike={() => handleCommentDislike(c.id)}
+              isMyComment={user && c.authorId === user.id}
+              onDelete={() => deleteComment(c.id)}
             />
           ))}
         </div>
@@ -235,18 +241,14 @@ function PostDetail({ post, user, onClose }) {
       {/* 댓글 입력 */}
       <div style={{ position:'fixed', bottom:0, left:'50%', transform:'translateX(-50%)', width:'100%', maxWidth:430, background:'#0d1220', borderTop:'1px solid #1e2d45', padding:'10px 12px 20px' }}>
         <div style={{ display:'flex', gap:7 }}>
-          <input
-            value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key==='Enter' && submitComment()}
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key==='Enter' && submitComment()}
             placeholder={user ? '댓글을 입력하세요...' : '로그인 후 댓글을 작성할 수 있어요'}
             disabled={!user}
             style={{ flex:1, background:'#111827', border:'1px solid #243550', borderRadius:10, padding:'9px 12px', color:'#e2e8f0', fontSize:13, outline:'none' }}
           />
-          <button onClick={submitComment} disabled={submitting||!user} style={{
-            background: user?'#3b82f6':'#1e2d45', border:'none', borderRadius:10,
-            padding:'9px 15px', color:'#fff', fontWeight:700, fontSize:12,
-            cursor: user?'pointer':'default',
-          }}>등록</button>
+          <button onClick={submitComment} disabled={submitting||!user} style={{ background:user?'#3b82f6':'#1e2d45', border:'none', borderRadius:10, padding:'9px 15px', color:'#fff', fontWeight:700, fontSize:12, cursor:user?'pointer':'default' }}>
+            등록
+          </button>
         </div>
       </div>
     </div>
@@ -272,17 +274,17 @@ function WriteModal({ tab, onClose, onSuccess }) {
     setSubmitting(true);
     try {
       let tag = '';
-      if (tab === 'together') tag = stadium;
-      if (tab === 'photo')    tag = photoTag;
-      if (tab === 'trade')    tag = tradeTag;
+      if (tab==='together') tag = stadium;
+      if (tab==='photo')    tag = photoTag;
+      if (tab==='trade')    tag = tradeTag;
       const res = await fetch(SERVER + '/api/posts', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
-        body: JSON.stringify({ title, content, boardType: tab, team: tab==='team'?team:undefined, tag:tag||undefined }),
+        body: JSON.stringify({ title, content, boardType:tab, team:tab==='team'?team:undefined, tag:tag||undefined }),
       });
       const data = await res.json();
       if (data.success) onSuccess();
-      else alert('글쓰기 실패: ' + (data.message || '오류'));
+      else alert('글쓰기 실패: ' + (data.message||'오류'));
     } catch(e) { alert('서버 연결 실패'); }
     setSubmitting(false);
   };
@@ -357,6 +359,9 @@ function Board({ user }) {
   const [likes, setLikes]         = useState({});
   const [dislikes, setDislikes]   = useState({});
   const [reports, setReports]     = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null); // null = 검색 안 한 상태
+  const [searching, setSearching] = useState(false);
 
   const fetchPosts = useCallback(async () => {
     if (tab === 'news') return;
@@ -380,9 +385,22 @@ function Board({ user }) {
   }, []);
 
   useEffect(() => {
+    setSearchResults(null);
+    setSearchQuery('');
     if (tab === 'news') fetchNews();
     else fetchPosts();
   }, [tab, fetchPosts, fetchNews]);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const res  = await fetch(`${SERVER}/api/search?q=${encodeURIComponent(searchQuery)}&boardType=${tab}`);
+      const data = await res.json();
+      if (data.success) setSearchResults(data.data);
+    } catch(e) { console.log('검색 실패:', e); }
+    setSearching(false);
+  };
 
   const handleLike = async (postId) => {
     if (likes[postId]) return;
@@ -396,14 +414,31 @@ function Board({ user }) {
     await fetch(`${SERVER}/api/posts/${postId}/dislike`, { method:'POST' });
   };
 
-  // HOT 기준: 추천 10개 이상
-  const hotPosts    = posts.filter(p => (p.likes??0) >= 10);
-  const normalPosts = posts.filter(p => (p.likes??0) < 10);
+  const handleDelete = async (postId) => {
+    if (!window.confirm('게시글을 삭제할까요?')) return;
+    const token = localStorage.getItem('dugout_token');
+    try {
+      const res  = await fetch(`${SERVER}/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization':'Bearer ' + token },
+      });
+      const data = await res.json();
+      if (data.success) fetchPosts();
+      else alert(data.message);
+    } catch(e) { alert('삭제 실패'); }
+  };
+
+  const displayPosts  = searchResults !== null ? searchResults : posts;
+  const hotPosts      = displayPosts.filter(p => (p.likes??0) >= 10);
+  const normalPosts   = displayPosts.filter(p => (p.likes??0) < 10);
 
   return (
     <div style={{ paddingBottom:80 }}>
       {selected && (
-        <PostDetail post={selected} user={user} onClose={() => setSelected(null)} />
+        <PostDetail post={selected} user={user}
+          onClose={() => setSelected(null)}
+          onDeleted={() => { fetchPosts(); setSelected(null); }}
+        />
       )}
 
       {/* 탭 */}
@@ -418,7 +453,34 @@ function Board({ user }) {
         ))}
       </div>
 
+      {/* 검색 바 (뉴스 탭 제외) */}
+      {tab !== 'news' && (
+        <div style={{ padding:'10px 14px 0', display:'flex', gap:7 }}>
+          <input
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); if(!e.target.value) setSearchResults(null); }}
+            onKeyDown={e => e.key==='Enter' && handleSearch()}
+            placeholder="게시글 검색..."
+            style={{ flex:1, background:'#111827', border:'1px solid #1e2d45', borderRadius:10, padding:'8px 12px', color:'#e2e8f0', fontSize:13, outline:'none' }}
+          />
+          {searchResults !== null ? (
+            <button onClick={() => { setSearchResults(null); setSearchQuery(''); }} style={{ padding:'8px 12px', borderRadius:10, background:'#1e2d45', border:'none', color:'#94a3b8', fontSize:12, cursor:'pointer' }}>✕ 취소</button>
+          ) : (
+            <button onClick={handleSearch} disabled={searching} style={{ padding:'8px 14px', borderRadius:10, background:'#3b82f6', border:'none', color:'#fff', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+              {searching ? '...' : '🔍'}
+            </button>
+          )}
+        </div>
+      )}
+
       <div style={{ padding:'10px 14px' }}>
+        {/* 검색 결과 헤더 */}
+        {searchResults !== null && (
+          <div style={{ fontSize:12, color:'#64748b', marginBottom:10 }}>
+            🔍 "{searchQuery}" 검색 결과 {searchResults.length}개
+          </div>
+        )}
+
         {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'#64748b', fontSize:13 }}>불러오는 중...</div>}
 
         {tab==='news' && !loading && (
@@ -429,10 +491,12 @@ function Board({ user }) {
 
         {tab!=='news' && !loading && (
           <>
-            {posts.length===0 && (
-              <div style={{ textAlign:'center', padding:'40px 0', color:'#64748b', fontSize:13 }}>아직 게시글이 없어요. 첫 글을 작성해보세요! ✍️</div>
+            {displayPosts.length===0 && (
+              <div style={{ textAlign:'center', padding:'40px 0', color:'#64748b', fontSize:13 }}>
+                {searchResults !== null ? '검색 결과가 없어요 😢' : '아직 게시글이 없어요. 첫 글을 작성해보세요! ✍️'}
+              </div>
             )}
-            {hotPosts.length > 0 && (
+            {searchResults === null && hotPosts.length > 0 && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:8 }}>
                   <span style={{ fontSize:13 }}>🔥</span>
@@ -444,24 +508,30 @@ function Board({ user }) {
                     liked={likes[post.id]} onLike={() => handleLike(post.id)}
                     disliked={dislikes[post.id]} onDislike={() => handleDislike(post.id)}
                     reported={reports[post.id]} onReport={() => setReports(p => ({ ...p, [post.id]:true }))}
+                    isMyPost={user && post.authorId === user.id}
+                    onDelete={() => handleDelete(post.id)}
                   />
                 ))}
                 <div style={{ height:1, background:'#1e2d45', margin:'12px 0' }} />
               </div>
             )}
-            {normalPosts.map(post => (
+            {(searchResults !== null ? displayPosts : normalPosts).map(post => (
               <PostCard key={post.id} post={post} type={tab}
                 onClick={() => setSelected(post)}
                 liked={likes[post.id]} onLike={() => handleLike(post.id)}
                 disliked={dislikes[post.id]} onDislike={() => handleDislike(post.id)}
                 reported={reports[post.id]} onReport={() => setReports(p => ({ ...p, [post.id]:true }))}
+                isMyPost={user && post.authorId === user.id}
+                onDelete={() => handleDelete(post.id)}
               />
             ))}
-            <div style={{ textAlign:'center', marginTop:12 }}>
-              <button onClick={() => setShowWrite(true)} style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                ✏️ 글쓰기
-              </button>
-            </div>
+            {searchResults === null && (
+              <div style={{ textAlign:'center', marginTop:12 }}>
+                <button onClick={() => setShowWrite(true)} style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                  ✏️ 글쓰기
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
