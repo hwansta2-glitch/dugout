@@ -46,7 +46,7 @@ function Diamond({ bases }) {
       }} />
     </div>
   );
-}function Live() {
+}function Live({ user }) {
   const [msgs, setMsgs] = useState(INIT_MSGS);
   const [input, setInput] = useState('');
   const [warning, setWarning] = useState(false);
@@ -102,12 +102,12 @@ useEffect(() => {
 const sendMsg = () => {
   if (!input.trim()) return;
   if (hasBadWord(input)) { setWarning(true); return; }
-  socket.emit('send_message', {
-    message: input,
-    userId: 1,
-    userName: '나',
-    roomId: ROOM_ID,
-  });
+socket.emit('send_message', {
+  message: input,
+  userId: user?.id || null,
+  userName: user?.nickname || user?.name || '익명',
+  roomId: ROOM_ID,
+});
   setInput('');
   setWarning(false);
 };
