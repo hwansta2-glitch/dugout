@@ -292,8 +292,15 @@ function GameCard({ game, onClick }) {
   const isLive     = game.state === 'LIVE' || game.state === '경기중';
   const isDone     = game.state === '종료';
   const isUpcoming = !isLive && !isDone;
-  const winnerAway = isDone && game.awayScore != null && game.awayScore > game.homeScore;
-  const winnerHome = isDone && game.homeScore != null && game.homeScore > game.awayScore;
+  // 점수로 승자 판단, 없으면 winPitcher 팀으로 판단
+  const winnerAway = isDone && (
+    game.awayScore != null ? game.awayScore > game.homeScore :
+    game.winPitcher && game.awayPitcher && game.winPitcher.trim() === game.awayPitcher.trim()
+  );
+  const winnerHome = isDone && (
+    game.homeScore != null ? game.homeScore > game.awayScore :
+    game.winPitcher && game.homePitcher && game.winPitcher.trim() === game.homePitcher.trim()
+  );
   const countdown  = useCountdown(game.startTime, isUpcoming && (() => { const t=new Date(); const ts=`${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; return game.dateStr >= ts; })(), game.dateStr);
 
   return (
@@ -304,6 +311,8 @@ function GameCard({ game, onClick }) {
           <div style={{ fontSize:10, color:'#475569', fontWeight:600, marginBottom:3 }}>원정</div>
           <div style={{ fontSize:17, fontWeight:900, color:isDone&&!winnerAway?'#64748b':'#e2e8f0' }}>{game.awayTeam}</div>
           {game.awayScore != null && <div style={{ fontSize:28, fontWeight:900, color:winnerAway?'#fff':isDone?'#64748b':'#e2e8f0', marginTop:2 }}>{game.awayScore}</div>}
+          {isDone && game.awayScore == null && winnerAway && <div style={{ fontSize:11, color:'#10b981', fontWeight:700, marginTop:3 }}>승</div>}
+          {isDone && game.awayScore == null && !winnerAway && game.winPitcher && <div style={{ fontSize:11, color:'#64748b', marginTop:3 }}>패</div>}
         </div>
         <div style={{ textAlign:'center', padding:'0 12px', minWidth:90 }}>
           {isLive && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
@@ -326,6 +335,8 @@ function GameCard({ game, onClick }) {
           <div style={{ fontSize:10, color:'#3b82f6', fontWeight:600, marginBottom:3 }}>홈</div>
           <div style={{ fontSize:17, fontWeight:900, color:isDone&&!winnerHome?'#64748b':'#e2e8f0' }}>{game.homeTeam}</div>
           {game.homeScore != null && <div style={{ fontSize:28, fontWeight:900, color:winnerHome?'#fff':isDone?'#64748b':'#e2e8f0', marginTop:2 }}>{game.homeScore}</div>}
+          {isDone && game.homeScore == null && winnerHome && <div style={{ fontSize:11, color:'#10b981', fontWeight:700, marginTop:3 }}>승</div>}
+          {isDone && game.homeScore == null && !winnerHome && game.winPitcher && <div style={{ fontSize:11, color:'#64748b', marginTop:3 }}>패</div>}
         </div>
       </div>
       {(game.awayPitcher || game.homePitcher) && (
