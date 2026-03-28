@@ -19,7 +19,6 @@ const STADIUMS = [
 const PHOTO_TAGS = ['선수', '직관인증'];
 const TRADE_TAGS = ['삽니다', '팝니다', '나눔'];
 
-// ── 게시글 카드 ──────────────────────────────────────
 function PostCard({ post, type, onLike, onDislike, liked, disliked, reported, onReport, onClick, onDelete, isMyPost }) {
   if (reported) return (
     <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:12, padding:'12px 14px', marginBottom:8, color:'#64748b', fontSize:13 }}>
@@ -32,6 +31,8 @@ function PostCard({ post, type, onLike, onDislike, liked, disliked, reported, on
         {(post.likes??0)>=10 && <span style={{ fontSize:10, color:'#ef4444', border:'1px solid #ef444444', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>🔥 HOT</span>}
         {post.team && <span style={{ fontSize:10, color:'#94a3b8', border:'1px solid #1e2d45', borderRadius:4, padding:'2px 7px' }}>{post.team}</span>}
         {post.tag  && <span style={{ fontSize:10, color:'#3b82f6', border:'1px solid #3b82f644', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>{post.tag}</span>}
+        {post.imageUrl && <span style={{ fontSize:10, color:'#10b981' }}>📷</span>}
+        {post.videoUrl && <span style={{ fontSize:10, color:'#f59e0b' }}>🎥</span>}
         <span style={{ fontSize:10, color:'#64748b', marginLeft:'auto' }}>
           {post.createdAt ? new Date(post.createdAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : ''}
         </span>
@@ -60,7 +61,6 @@ function PostCard({ post, type, onLike, onDislike, liked, disliked, reported, on
   );
 }
 
-// ── 뉴스 카드 ────────────────────────────────────────
 function NewsCard({ item }) {
   return (
     <a href={item.link} target="_blank" rel="noreferrer" style={{ textDecoration:'none' }}>
@@ -73,7 +73,6 @@ function NewsCard({ item }) {
   );
 }
 
-// ── 댓글 컴포넌트 ────────────────────────────────────
 function CommentItem({ comment, onLike, onDislike, liked, disliked, onDelete, isMyComment }) {
   const isBest = (comment.likes ?? 0) >= 10;
   return (
@@ -102,12 +101,11 @@ function CommentItem({ comment, onLike, onDislike, liked, disliked, onDelete, is
   );
 }
 
-// ── 게시글 상세 + 댓글 ──────────────────────────────
 function PostDetail({ post, user, onClose, onDeleted }) {
-  const [comments, setComments]         = useState([]);
-  const [input, setInput]               = useState('');
-  const [submitting, setSubmitting]     = useState(false);
-  const [commentLikes, setCommentLikes]       = useState({});
+  const [comments, setComments]             = useState([]);
+  const [input, setInput]                   = useState('');
+  const [submitting, setSubmitting]         = useState(false);
+  const [commentLikes, setCommentLikes]     = useState({});
   const [commentDislikes, setCommentDislikes] = useState({});
 
   useEffect(() => {
@@ -164,11 +162,9 @@ function PostDetail({ post, user, onClose, onDeleted }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'#080c14', zIndex:100, overflowY:'auto', paddingBottom:80 }}>
-      {/* 헤더 */}
       <div style={{ position:'sticky', top:0, background:'#080c14', borderBottom:'1px solid #1e2d45', padding:'12px 16px', display:'flex', alignItems:'center', gap:10, zIndex:10 }}>
         <button onClick={onClose} style={{ background:'transparent', border:'none', color:'#94a3b8', fontSize:20, cursor:'pointer' }}>←</button>
         <span style={{ fontSize:14, fontWeight:700, color:'#e2e8f0' }}>게시글</span>
-        {/* 본인 게시글 삭제 버튼 */}
         {user && post.authorId === user.id && (
           <button onClick={async () => {
             if (!window.confirm('게시글을 삭제할까요?')) return;
@@ -204,9 +200,20 @@ function PostDetail({ post, user, onClose, onDeleted }) {
             <span style={{ fontSize:11, color:'#64748b' }}>👁 {post.views??0}</span>
           </div>
         </div>
-        <div style={{ fontSize:14, color:'#cbd5e1', lineHeight:1.8, marginBottom:24, minHeight:60, whiteSpace:'pre-wrap' }}>
+
+        {/* 본문 */}
+        <div style={{ fontSize:14, color:'#cbd5e1', lineHeight:1.8, marginBottom:16, minHeight:60, whiteSpace:'pre-wrap' }}>
           {post.content || '내용이 없습니다.'}
         </div>
+
+        {/* 이미지 표시 */}
+        {post.imageUrl && (
+          <img src={post.imageUrl} alt="첨부 이미지" style={{ width:'100%', borderRadius:10, marginBottom:12, maxHeight:400, objectFit:'cover' }} />
+        )}
+        {/* 동영상 표시 */}
+        {post.videoUrl && (
+          <video src={post.videoUrl} controls style={{ width:'100%', borderRadius:10, marginBottom:12 }} />
+        )}
 
         {/* 댓글 */}
         <div style={{ borderTop:'1px solid #1e2d45', paddingTop:16 }}>
@@ -255,17 +262,42 @@ function PostDetail({ post, user, onClose, onDeleted }) {
   );
 }
 
-// ── 글쓰기 모달 ──────────────────────────────────────
 function WriteModal({ tab, onClose, onSuccess }) {
-  const [title, setTitle]       = useState('');
-  const [content, setContent]   = useState('');
-  const [team, setTeam]         = useState('LG');
-  const [stadium, setStadium]   = useState(STADIUMS[0]);
-  const [photoTag, setPhotoTag] = useState(PHOTO_TAGS[0]);
-  const [tradeTag, setTradeTag] = useState(TRADE_TAGS[0]);
+  const [title, setTitle]         = useState('');
+  const [content, setContent]     = useState('');
+  const [team, setTeam]           = useState('LG');
+  const [stadium, setStadium]     = useState(STADIUMS[0]);
+  const [photoTag, setPhotoTag]   = useState(PHOTO_TAGS[0]);
+  const [tradeTag, setTradeTag]   = useState(TRADE_TAGS[0]);
   const [submitting, setSubmitting] = useState(false);
+  const [imageUrl, setImageUrl]   = useState('');
+  const [videoUrl, setVideoUrl]   = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadType, setUploadType] = useState(null);
 
   const KBO_TEAMS = ['LG','KIA','삼성','두산','롯데','SSG','키움','NC','한화','KT'];
+
+  const uploadFile = async (file, type) => {
+    setUploading(true);
+    setUploadType(type);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${SERVER}/api/upload/${type}`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (type === 'image') setImageUrl(data.url);
+        else setVideoUrl(data.url);
+      } else {
+        alert('업로드 실패: ' + data.message);
+      }
+    } catch(e) { alert('업로드 실패'); }
+    setUploading(false);
+    setUploadType(null);
+  };
 
   const submit = async () => {
     if (!title.trim()) return alert('제목을 입력해주세요');
@@ -280,7 +312,7 @@ function WriteModal({ tab, onClose, onSuccess }) {
       const res = await fetch(SERVER + '/api/posts', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
-        body: JSON.stringify({ title, content, boardType:tab, team:tab==='team'?team:undefined, tag:tag||undefined }),
+        body: JSON.stringify({ title, content, boardType:tab, team:tab==='team'?team:undefined, tag:tag||undefined, imageUrl:imageUrl||undefined, videoUrl:videoUrl||undefined }),
       });
       const data = await res.json();
       if (data.success) onSuccess();
@@ -291,7 +323,7 @@ function WriteModal({ tab, onClose, onSuccess }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'#000000cc', zIndex:100, display:'flex', alignItems:'flex-end' }}>
-      <div style={{ width:'100%', background:'#0f172a', borderRadius:'16px 16px 0 0', padding:'20px 16px 40px', maxHeight:'85vh', overflowY:'auto' }}>
+      <div style={{ width:'100%', background:'#0f172a', borderRadius:'16px 16px 0 0', padding:'20px 16px 40px', maxHeight:'90vh', overflowY:'auto' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
           <span style={{ fontSize:15, fontWeight:700, color:'#e2e8f0' }}>✏️ 글쓰기</span>
           <button onClick={onClose} style={{ background:'transparent', border:'none', color:'#64748b', fontSize:20, cursor:'pointer' }}>✕</button>
@@ -338,30 +370,62 @@ function WriteModal({ tab, onClose, onSuccess }) {
         )}
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="제목을 입력하세요" maxLength={100}
           style={{ width:'100%', padding:'10px 12px', borderRadius:8, background:'#111827', border:'1px solid #1e2d45', color:'#e2e8f0', fontSize:13, marginBottom:10, boxSizing:'border-box', outline:'none' }} />
-        <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="내용을 입력하세요 (선택)" rows={4}
-          style={{ width:'100%', padding:'10px 12px', borderRadius:8, background:'#111827', border:'1px solid #1e2d45', color:'#e2e8f0', fontSize:13, marginBottom:14, boxSizing:'border-box', resize:'none', outline:'none' }} />
-        <button onClick={submit} disabled={submitting} style={{ width:'100%', padding:'12px', borderRadius:10, background:submitting?'#1e2d45':'#3b82f6', border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>
-          {submitting ? '등록 중...' : '게시글 등록'}
+        <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="내용을 입력하세요 (선택)" rows={3}
+          style={{ width:'100%', padding:'10px 12px', borderRadius:8, background:'#111827', border:'1px solid #1e2d45', color:'#e2e8f0', fontSize:13, marginBottom:10, boxSizing:'border-box', resize:'none', outline:'none' }} />
+
+        {/* 이미지 업로드 */}
+        <div style={{ marginBottom:10 }}>
+          <div style={{ fontSize:11, color:'#64748b', marginBottom:6 }}>📷 이미지 첨부 (선택)</div>
+          {imageUrl ? (
+            <div style={{ position:'relative' }}>
+              <img src={imageUrl} alt="업로드" style={{ width:'100%', borderRadius:8, maxHeight:200, objectFit:'cover' }} />
+              <button onClick={() => setImageUrl('')} style={{ position:'absolute', top:6, right:6, background:'#000000aa', border:'none', borderRadius:'50%', width:24, height:24, color:'#fff', fontSize:14, cursor:'pointer' }}>✕</button>
+            </div>
+          ) : (
+            <label style={{ display:'flex', alignItems:'center', padding:'10px 12px', background:'#111827', border:'1px dashed #1e2d45', borderRadius:8, cursor:'pointer' }}>
+              <span style={{ fontSize:13, color:'#64748b' }}>{uploading && uploadType==='image' ? '⏳ 업로드 중...' : '+ 이미지 선택 (최대 10MB)'}</span>
+              <input type="file" accept="image/*" style={{ display:'none' }} onChange={e => e.target.files[0] && uploadFile(e.target.files[0], 'image')} />
+            </label>
+          )}
+        </div>
+
+        {/* 동영상 업로드 */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:11, color:'#64748b', marginBottom:6 }}>🎥 동영상 첨부 (선택)</div>
+          {videoUrl ? (
+            <div style={{ position:'relative' }}>
+              <video src={videoUrl} controls style={{ width:'100%', borderRadius:8, maxHeight:200 }} />
+              <button onClick={() => setVideoUrl('')} style={{ position:'absolute', top:6, right:6, background:'#000000aa', border:'none', borderRadius:'50%', width:24, height:24, color:'#fff', fontSize:14, cursor:'pointer' }}>✕</button>
+            </div>
+          ) : (
+            <label style={{ display:'flex', alignItems:'center', padding:'10px 12px', background:'#111827', border:'1px dashed #1e2d45', borderRadius:8, cursor:'pointer' }}>
+              <span style={{ fontSize:13, color:'#64748b' }}>{uploading && uploadType==='video' ? '⏳ 업로드 중...' : '+ 동영상 선택 (최대 100MB)'}</span>
+              <input type="file" accept="video/*" style={{ display:'none' }} onChange={e => e.target.files[0] && uploadFile(e.target.files[0], 'video')} />
+            </label>
+          )}
+        </div>
+
+        <button onClick={submit} disabled={submitting||uploading} style={{ width:'100%', padding:'12px', borderRadius:10, background:submitting||uploading?'#1e2d45':'#3b82f6', border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+          {submitting ? '등록 중...' : uploading ? '⏳ 업로드 중...' : '게시글 등록'}
         </button>
       </div>
     </div>
   );
 }
 
-// ── 메인 Board ───────────────────────────────────────
 function Board({ user, onLoginRequired }) {
-  const [tab, setTab]             = useState('team');
-  const [posts, setPosts]         = useState([]);
-  const [news, setNews]           = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [showWrite, setShowWrite] = useState(false);
-  const [selected, setSelected]   = useState(null);
-  const [likes, setLikes]         = useState({});
-  const [dislikes, setDislikes]   = useState({});
-  const [reports, setReports]     = useState({});
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState(null); // null = 검색 안 한 상태
-  const [searching, setSearching] = useState(false);
+  const [tab, setTab]               = useState('team');
+  const [posts, setPosts]           = useState([]);
+  const [news, setNews]             = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [showWrite, setShowWrite]   = useState(false);
+  const [selected, setSelected]     = useState(null);
+  const [likes, setLikes]           = useState({});
+  const [dislikes, setDislikes]     = useState({});
+  const [reports, setReports]       = useState({});
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching]   = useState(false);
 
   const fetchPosts = useCallback(async () => {
     if (tab === 'news') return;
@@ -428,9 +492,9 @@ function Board({ user, onLoginRequired }) {
     } catch(e) { alert('삭제 실패'); }
   };
 
-  const displayPosts  = searchResults !== null ? searchResults : posts;
-  const hotPosts      = displayPosts.filter(p => (p.likes??0) >= 10);
-  const normalPosts   = displayPosts.filter(p => (p.likes??0) < 10);
+  const displayPosts = searchResults !== null ? searchResults : posts;
+  const hotPosts     = displayPosts.filter(p => (p.likes??0) >= 10);
+  const normalPosts  = displayPosts.filter(p => (p.likes??0) < 10);
 
   return (
     <div style={{ paddingBottom:80 }}>
@@ -453,7 +517,7 @@ function Board({ user, onLoginRequired }) {
         ))}
       </div>
 
-      {/* 검색 바 (뉴스 탭 제외) */}
+      {/* 검색 바 */}
       {tab !== 'news' && (
         <div style={{ padding:'10px 14px 0', display:'flex', gap:7 }}>
           <input
@@ -474,7 +538,6 @@ function Board({ user, onLoginRequired }) {
       )}
 
       <div style={{ padding:'10px 14px' }}>
-        {/* 검색 결과 헤더 */}
         {searchResults !== null && (
           <div style={{ fontSize:12, color:'#64748b', marginBottom:10 }}>
             🔍 "{searchQuery}" 검색 결과 {searchResults.length}개
@@ -526,17 +589,17 @@ function Board({ user, onLoginRequired }) {
               />
             ))}
             {searchResults === null && (
-<div style={{ textAlign:'center', marginTop:12 }}>
-  {user ? (
-    <button onClick={() => setShowWrite(true)} style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-      ✏️ 글쓰기
-    </button>
-  ) : (
-    <button onClick={onLoginRequired} style={{ padding:'10px 24px', background:'#1e2d45', border:'1px solid #243550', borderRadius:20, color:'#64748b', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-      🔐 로그인 후 글쓰기 가능
-    </button>
-  )}
-</div>
+              <div style={{ textAlign:'center', marginTop:12 }}>
+                {user ? (
+                  <button onClick={() => setShowWrite(true)} style={{ padding:'10px 24px', background:'#3b82f6', border:'none', borderRadius:20, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                    ✏️ 글쓰기
+                  </button>
+                ) : (
+                  <button onClick={onLoginRequired} style={{ padding:'10px 24px', background:'#1e2d45', border:'1px solid #243550', borderRadius:20, color:'#64748b', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                    🔐 로그인 후 글쓰기 가능
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}
