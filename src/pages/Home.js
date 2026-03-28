@@ -83,7 +83,7 @@ function GameDetailModal({ game, onClose }) {
   const isUpcoming = !isDone && game.awayScore == null;
   const winnerAway = isDone && game.awayScore > game.homeScore;
   const winnerHome = isDone && game.homeScore > game.awayScore;
-  const countdown  = useCountdown(game.startTime, isUpcoming, game.dateStr);
+  const countdown  = useCountdown(game.startTime, isUpcoming && (() => { const t=new Date(); const ts=`${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; return game.dateStr >= ts; })(), game.dateStr);
 
   return (
     <div style={{ position:'fixed', inset:0, background:'#000c', zIndex:200, display:'flex', alignItems:'flex-end' }} onClick={onClose}>
@@ -294,7 +294,7 @@ function GameCard({ game, onClick }) {
   const isUpcoming = !isLive && !isDone;
   const winnerAway = isDone && game.awayScore != null && game.awayScore > game.homeScore;
   const winnerHome = isDone && game.homeScore != null && game.homeScore > game.awayScore;
-  const countdown  = useCountdown(game.startTime, isUpcoming, game.dateStr);
+  const countdown  = useCountdown(game.startTime, isUpcoming && (() => { const t=new Date(); const ts=`${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; return game.dateStr >= ts; })(), game.dateStr);
 
   return (
     <div onClick={onClick} style={{ background:'#111827', border:isLive?'1px solid #ef444444':'1px solid #1e2d45', borderRadius:14, padding:14, marginBottom:10, cursor:'pointer', position:'relative', overflow:'hidden' }}>
