@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Home from './pages/Home';
 import Live from './pages/Live';
 import Board from './pages/Board';
+import Rank from './pages/Rank';
 import Profile from './pages/Profile';
 
 const SERVER = process.env.REACT_APP_SERVER_URL || 'http://localhost:3001';
@@ -175,6 +176,7 @@ function App() {
         {tab==='home'    && <Home onGoLive={goLive} user={user} />}
         {tab==='live'    && <Live user={user} onLoginRequired={login} game={liveGame} />}
         {tab==='board'   && <Board user={user} onLoginRequired={login} />}
+        {tab==='rank'    && <Rank user={user} />}
         {tab==='profile' && <Profile user={user} onLogout={logout} />}
       </div>
 
