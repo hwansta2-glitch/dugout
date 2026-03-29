@@ -183,6 +183,7 @@ function App() {
         {[
           { id:'home',    label:'홈',    icon:'🏠' },
           { id:'live',    label:'라이브', icon:'📡' },
+          { id:'rank',    label:'순위',   icon:'🏆' },
           { id:'board',   label:'게시판', icon:'📋' },
           { id:'profile', label:'MY',    icon:'👤' },
         ].map(t => (
