@@ -34,6 +34,12 @@ function getWeatherEmoji(code, rain) {
   return '🌩️';
 }
 
+const TEAM_MAP = {
+  'LG 트윈스':'LG', 'KIA 타이거즈':'KIA', '삼성 라이온즈':'삼성',
+  '두산 베어스':'두산', 'KT 위즈':'KT', 'SSG 랜더스':'SSG',
+  '롯데 자이언츠':'롯데', '한화 이글스':'한화', 'NC 다이노스':'NC', '키움 히어로즈':'키움',
+};
+
 function toDateStr(date) {
   const yyyy = date.getFullYear();
   const mm   = String(date.getMonth()+1).padStart(2,'0');
@@ -288,7 +294,7 @@ function ScheduleModal({ onClose, onSelectDate }) {
 }
 
 // ── 게임 카드 ────────────────────────────────────────
-function GameCard({ game, onClick }) {
+function GameCard({ game, onClick, isMyTeam }) {
   const isLive     = game.state === 'LIVE' || game.state === '경기중';
   const isDone     = game.state === '종료';
   const isUpcoming = !isLive && !isDone;
@@ -304,9 +310,17 @@ function GameCard({ game, onClick }) {
   const countdown  = useCountdown(game.startTime, isUpcoming && (() => { const t=new Date(); const ts=`${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; return game.dateStr >= ts; })(), game.dateStr);
 
   return (
-    <div onClick={onClick} style={{ background:'#111827', border:isLive?'1px solid #ef444444':'1px solid #1e2d45', borderRadius:14, padding:14, marginBottom:10, cursor:'pointer', position:'relative', overflow:'hidden' }}>
+  return (
+    <div onClick={onClick} style={{
+      background: isMyTeam ? '#0f1f35' : '#111827',
+      border: isLive ? '1px solid #ef444444' : isMyTeam ? '1px solid #3b82f6' : '1px solid #1e2d45',
+      borderRadius:14, padding:14, marginBottom:10, cursor:'pointer', position:'relative', overflow:'hidden'
+    }}>
+      {isMyTeam && !isLive && <div style={{ height:2, background:'linear-gradient(90deg,#3b82f6,#8b5cf6)', position:'absolute', top:0, left:0, right:0 }} />}
+      {isMyTeam && <div style={{ position:'absolute', top:8, right:10, fontSize:9, color:'#3b82f6', fontWeight:700, letterSpacing:1 }}>⭐ 내 팀</div>}
       {isLive && <div style={{ height:2, background:'linear-gradient(90deg,#ef4444,#f59e0b)', position:'absolute', top:0, left:0, right:0 }} />}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:isLive?6:0 }}>
+
+
         <div style={{ textAlign:'center', flex:1 }}>
           <div style={{ fontSize:10, color:'#475569', fontWeight:600, marginBottom:3 }}>원정</div>
           <div style={{ fontSize:17, fontWeight:900, color:isDone&&!winnerAway?'#64748b':'#e2e8f0' }}>{game.awayTeam}</div>
@@ -351,7 +365,7 @@ function GameCard({ game, onClick }) {
 }
 
 // ── 메인 Home ────────────────────────────────────────
-function Home({ onGoLive }) {
+function Home({ onGoLive, user }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames]               = useState([]);
   const [hotPosts, setHotPosts]         = useState([]);
@@ -508,15 +522,29 @@ function Home({ onGoLive }) {
           <span style={{ fontSize:11, color:'#475569' }}>📅 달력에서 경기 있는 날을 확인하세요</span>
         </div>
       )}
-      {!gamesLoading && games.map(game => (
-        <GameCard key={game.id} game={game} onClick={() => {
-          if (game.state === '예정' || game.state === 'LIVE' || game.state === '경기중') {
-            onGoLive(game);
-          } else {
-            setSelectedGame(game);
-          }
-        }} />
-      ))}
+      {!gamesLoading && [...games]
+        .sort((a, b) => {
+          const myTeamShort = user?.team ? (TEAM_MAP[user.team] || user.team) : null;
+          const aIsMyTeam = myTeamShort && (a.awayTeam?.includes(myTeamShort) || a.homeTeam?.includes(myTeamShort));
+          const bIsMyTeam = myTeamShort && (b.awayTeam?.includes(myTeamShort) || b.homeTeam?.includes(myTeamShort));
+          if (aIsMyTeam && !bIsMyTeam) return -1;
+          if (!aIsMyTeam && bIsMyTeam) return 1;
+          return 0;
+        })
+        .map(game => {
+          const myTeamShort = user?.team ? (TEAM_MAP[user.team] || user.team) : null;
+          const isMyTeam = myTeamShort && (game.awayTeam?.includes(myTeamShort) || game.homeTeam?.includes(myTeamShort));
+          return (
+            <GameCard key={game.id} game={game} isMyTeam={isMyTeam} onClick={() => {
+              if (game.state === '예정' || game.state === 'LIVE' || game.state === '경기중') {
+                onGoLive(game);
+              } else {
+                setSelectedGame(game);
+              }
+            }} />
+          );
+        })
+      }
 
       {/* HOT 게시글 */}
       {!postsLoading && hotPosts.length > 0 && (

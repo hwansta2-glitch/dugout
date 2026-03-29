@@ -86,6 +86,22 @@ function Profile({ user, onLogout }) {
     setTimeout(() => setToast(''), 2500);
   };
 
+  // 팀 변경 API 저장
+  const changeTeam = async (teamId) => {
+    const found = TEAMS.find(t => t.id === teamId);
+    if (!found || !user) return;
+    try {
+      const token = localStorage.getItem('dugout_token');
+      await fetch(`${SERVER}/api/users/${user.id}/team`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ team: found.name }),
+      });
+      setMyTeam(teamId);
+      showToast(`${found.emoji} ${found.name} 팬으로 변경됐어요!`);
+    } catch(e) { showToast('팀 변경에 실패했어요 😢'); }
+  };
+
   // 닉네임 변경 가능 여부 확인
   const getNicknameCooldown = () => {
     if (!nicknameChangedAt) return null;
@@ -278,7 +294,7 @@ function Profile({ user, onLogout }) {
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
               {TEAMS.map(t => (
-                <div key={t.id} onClick={() => { setMyTeam(t.id); setShowTeamModal(false); showToast(`${t.emoji} ${t.name} 팬으로 변경됐어요!`); }} style={{
+                <div key={t.id} onClick={() => { changeTeam(t.id); setShowTeamModal(false); }} style={{
                   background: myTeam===t.id ? t.color+'18' : '#111827',
                   border:`2px solid ${myTeam===t.id ? t.color : '#1e2d45'}`,
                   borderRadius:12, padding:'14px 10px',

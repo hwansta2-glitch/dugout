@@ -172,7 +172,7 @@ function App() {
 
       {/* 메인 콘텐츠 */}
       <div style={{ flex:1, overflowY:'auto' }}>
-        {tab==='home'    && <Home onGoLive={goLive} />}
+        {tab==='home'    && <Home onGoLive={goLive} user={user} />}
         {tab==='live'    && <Live user={user} onLoginRequired={login} game={liveGame} />}
         {tab==='board'   && <Board user={user} onLoginRequired={login} />}
         {tab==='profile' && <Profile user={user} onLogout={logout} />}
