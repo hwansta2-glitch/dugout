@@ -333,6 +333,12 @@ function GameCard({ game, onClick, isMyTeam }) {
           {isLive && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
             <span style={{ fontSize:10, color:'#ef4444', border:'1px solid #ef444433', borderRadius:4, padding:'2px 7px', fontWeight:700 }}>● LIVE</span>
             {game.inning && <div style={{ fontSize:11, color:'#94a3b8' }}>{game.inning}</div>}
+            {/* 볼카운트 미리보기 */}
+            <div style={{ display:'flex', gap:3, alignItems:'center' }}>
+              {[...Array(4)].map((_,i) => <div key={i} style={{ width:7, height:7, borderRadius:'50%', background: i < (game.balls||0) ? '#10b981' : '#1e2d45' }} />)}
+              {[...Array(3)].map((_,i) => <div key={i} style={{ width:7, height:7, borderRadius:'50%', background: i < (game.strikes||0) ? '#f59e0b' : '#1e2d45' }} />)}
+              {[...Array(3)].map((_,i) => <div key={i} style={{ width:7, height:7, borderRadius:'50%', background: i < (game.outs||0) ? '#ef4444' : '#1e2d45' }} />)}
+            </div>
             {game.stadium && <div style={{ fontSize:10, color:'#475569' }}>🏟 {game.stadium} {game.weather}</div>}
           </div>}
           {isUpcoming && <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>

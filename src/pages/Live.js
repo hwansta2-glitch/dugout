@@ -299,10 +299,60 @@ function Live({ user, onLoginRequired, game: propGame }) {
           </div>
         )}
 
+        {/* LIVE 전광판 - 다이아몬드 + 볼카운트 + 투타자 */}
+        {isLive && (
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+            <Diamond bases={gs?.bases || {}} />
+            <div style={{ flex:1, display:'flex', flexDirection:'column', gap:6 }}>
+              {/* 볼카운트 */}
+              <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:8, padding:'7px 10px' }}>
+                <div style={{ fontSize:9, color:'#64748b', letterSpacing:1, marginBottom:6 }}>볼카운트</div>
+                <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                    <div style={{ fontSize:9, color:'#10b981' }}>B</div>
+                    <div style={{ display:'flex', gap:3 }}>
+                      {[...Array(4)].map((_,i) => <div key={i} style={{ width:10, height:10, borderRadius:'50%', background: i < (gs?.balls||0) ? '#10b981' : '#1e2d45' }} />)}
+                    </div>
+                  </div>
+                  <div style={{ width:1, height:20, background:'#1e2d45' }} />
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                    <div style={{ fontSize:9, color:'#f59e0b' }}>S</div>
+                    <div style={{ display:'flex', gap:3 }}>
+                      {[...Array(3)].map((_,i) => <div key={i} style={{ width:10, height:10, borderRadius:'50%', background: i < (gs?.strikes||0) ? '#f59e0b' : '#1e2d45' }} />)}
+                    </div>
+                  </div>
+                  <div style={{ width:1, height:20, background:'#1e2d45' }} />
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                    <div style={{ fontSize:9, color:'#ef4444' }}>O</div>
+                    <div style={{ display:'flex', gap:3 }}>
+                      {[...Array(3)].map((_,i) => <div key={i} style={{ width:10, height:10, borderRadius:'50%', background: i < (gs?.outs||0) ? '#ef4444' : '#1e2d45' }} />)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* 현재 투타자 */}
+              {(gs?.currentPitcher || gs?.currentBatter) && (
+                <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:8, padding:'7px 10px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between' }}>
+                    {gs.currentPitcher && <div>
+                      <div style={{ fontSize:9, color:'#64748b', marginBottom:2 }}>⚾ 투수</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#e2e8f0' }}>{gs.currentPitcher}</div>
+                    </div>}
+                    {gs.currentBatter && <div style={{ textAlign:'right' }}>
+                      <div style={{ fontSize:9, color:'#64748b', marginBottom:2 }}>🏏 타자</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#e2e8f0' }}>{gs.currentBatter}</div>
+                    </div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 선발/승패 투수 */}
         {(gs?.awayPitcher || gs?.homePitcher) && (
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-            <Diamond bases={{}} />
+            {!isLive && <Diamond bases={{}} />}
             <div style={{ flex:1, display:'flex', flexDirection:'column', gap:5 }}>
               <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:8, padding:'7px 10px' }}>
                 <div style={{ fontSize:9, color:'#64748b', letterSpacing:1, marginBottom:2 }}>⚾ 선발투수</div>
