@@ -372,7 +372,6 @@ function Home({ onGoLive, user }) {
   const [hotPosts, setHotPosts]         = useState([]);
   const [gamesLoading, setGamesLoading] = useState(false);
   const [postsLoading, setPostsLoading] = useState(true);
-  const [rankData, setRankData] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [showSchedule, setShowSchedule] = useState(false);
   const intervalRef = useRef(null);
@@ -493,12 +492,6 @@ function Home({ onGoLive, user }) {
 
   useEffect(() => { fetchHotPosts(); }, []);
 
-  useEffect(() => {
-    fetch(`${SERVER}/api/kbo/rank`)
-      .then(r => r.json())
-      .then(data => { if (data.success) setRankData(data.data); })
-      .catch(() => {});
-  }, []);
 
   const prevDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate()-1); setSelectedDate(d); };
   const nextDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate()+1); setSelectedDate(d); };
@@ -554,36 +547,6 @@ function Home({ onGoLive, user }) {
           );
         })
       }
-
-      {/* KBO 팀 순위 */}
-      {rankData.length > 0 && (
-        <div style={{ marginTop:20, marginBottom:8 }}>
-          <div style={{ fontSize:11, color:'#64748b', letterSpacing:2, fontWeight:700, marginBottom:10 }}>🏆 KBO 팀 순위</div>
-          <div style={{ background:'#111827', border:'1px solid #1e2d45', borderRadius:12, overflow:'hidden' }}>
-            <div style={{ display:'grid', gridTemplateColumns:'28px 1fr 36px 36px 36px 36px 52px', padding:'7px 12px', borderBottom:'1px solid #1e2d45' }}>
-              {['순위','팀','경기','승','무','패','승률'].map(h => (
-                <div key={h} style={{ fontSize:10, color:'#475569', fontWeight:700, textAlign: h==='팀'?'left':'center' }}>{h}</div>
-              ))}
-            </div>
-            {rankData.map((r, i) => {
-              const myTeamMap = {'LG 트윈스':'LG','KIA 타이거즈':'KIA','삼성 라이온즈':'삼성','두산 베어스':'두산','KT 위즈':'KT','SSG 랜더스':'SSG','롯데 자이언츠':'롯데','한화 이글스':'한화','NC 다이노스':'NC','키움 히어로즈':'키움'};
-              const myTeamShort = user?.team ? (myTeamMap[user.team] || user.team) : null;
-              const isMyTeam = myTeamShort && r.team?.includes(myTeamShort);
-              return (
-                <div key={i} style={{ display:'grid', gridTemplateColumns:'28px 1fr 36px 36px 36px 36px 52px', padding:'8px 12px', borderBottom: i < rankData.length-1 ? '1px solid #0f172a' : 'none', background: isMyTeam ? '#0f1f35' : 'transparent' }}>
-                  <div style={{ fontSize:12, fontWeight:700, color: i<3?'#f59e0b':'#64748b', textAlign:'center' }}>{r.rank}</div>
-                  <div style={{ fontSize:12, fontWeight: isMyTeam?900:500, color: isMyTeam?'#3b82f6':'#e2e8f0' }}>{r.team} {isMyTeam && '⭐'}</div>
-                  <div style={{ fontSize:11, color:'#64748b', textAlign:'center' }}>{r.games}</div>
-                  <div style={{ fontSize:11, color:'#10b981', textAlign:'center', fontWeight:700 }}>{r.win}</div>
-                  <div style={{ fontSize:11, color:'#64748b', textAlign:'center' }}>{r.draw}</div>
-                  <div style={{ fontSize:11, color:'#ef4444', textAlign:'center' }}>{r.lose}</div>
-                  <div style={{ fontSize:11, color:'#94a3b8', textAlign:'center' }}>{r.behind}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* HOT 게시글 */}
       {!postsLoading && hotPosts.length > 0 && (
