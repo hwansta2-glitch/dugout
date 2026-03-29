@@ -298,7 +298,6 @@ function GameCard({ game, onClick, isMyTeam }) {
   const isLive     = game.state === 'LIVE' || game.state === '경기중';
   const isDone     = game.state === '종료';
   const isUpcoming = !isLive && !isDone;
-  // 점수로 승자 판단, 없으면 winPitcher 팀으로 판단
   const winnerAway = isDone && (
     game.awayScore != null ? game.awayScore > game.homeScore :
     game.winPitcher && game.awayPitcher && game.winPitcher.trim() === game.awayPitcher.trim()
@@ -307,9 +306,12 @@ function GameCard({ game, onClick, isMyTeam }) {
     game.homeScore != null ? game.homeScore > game.awayScore :
     game.winPitcher && game.homePitcher && game.winPitcher.trim() === game.homePitcher.trim()
   );
-  const countdown  = useCountdown(game.startTime, isUpcoming && (() => { const t=new Date(); const ts=`${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; return game.dateStr >= ts; })(), game.dateStr);
+  const countdown = useCountdown(
+    game.startTime,
+    isUpcoming && (() => { const t=new Date(); const ts=`${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; return game.dateStr >= ts; })(),
+    game.dateStr
+  );
 
-  return (
   return (
     <div onClick={onClick} style={{
       background: isMyTeam ? '#0f1f35' : '#111827',
@@ -319,8 +321,7 @@ function GameCard({ game, onClick, isMyTeam }) {
       {isMyTeam && !isLive && <div style={{ height:2, background:'linear-gradient(90deg,#3b82f6,#8b5cf6)', position:'absolute', top:0, left:0, right:0 }} />}
       {isMyTeam && <div style={{ position:'absolute', top:8, right:10, fontSize:9, color:'#3b82f6', fontWeight:700, letterSpacing:1 }}>⭐ 내 팀</div>}
       {isLive && <div style={{ height:2, background:'linear-gradient(90deg,#ef4444,#f59e0b)', position:'absolute', top:0, left:0, right:0 }} />}
-
-
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:isLive?6:0 }}>
         <div style={{ textAlign:'center', flex:1 }}>
           <div style={{ fontSize:10, color:'#475569', fontWeight:600, marginBottom:3 }}>원정</div>
           <div style={{ fontSize:17, fontWeight:900, color:isDone&&!winnerAway?'#64748b':'#e2e8f0' }}>{game.awayTeam}</div>
